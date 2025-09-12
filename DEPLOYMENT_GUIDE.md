@@ -12,7 +12,7 @@ Create a `.env` file in the `backend` directory with the following variables:
 
 ```env
 # Database Configuration
-MONGODB_URI=mongodb+srv://kunal1902:<db_password>@fincare.nsuxwpd.mongodb.net/?retryWrites=true&w=majority&appName=fincare
+MONGODB_URI=mongodb+srv://kunal1902:123456@fincare.nsuxwpd.mongodb.net/?retryWrites=true&w=majority&appName=fincare
 
 # JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here_change_this_in_production
@@ -35,23 +35,13 @@ Create a `.env` file in the `frontend/fincare` directory:
 
 ```env
 # API Configuration
-VITE_API_URL=https://your-backend-domain.com/api
+VITE_API_URL=http://localhost:5000/api
 
 # App Configuration
 VITE_APP_NAME=FinCare
 VITE_APP_VERSION=1.0.0
 ```
 
-## Important Notes
-
-### 1. MongoDB Password
-Replace `<db_password>` in the MONGODB_URI with your actual MongoDB Atlas password.
-
-### 2. JWT Secret
-Change the JWT_SECRET to a strong, random string in production.
-
-### 3. CORS Configuration
-Update FRONTEND_URL to your actual frontend domain in production.
 
 ## Local Development
 
