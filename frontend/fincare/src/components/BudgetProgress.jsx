@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../utils/currencyUtils';
+import { formatCurrency } from '../utils/CurrencyUtils';
 import { Edit2, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const BudgetProgress = ({ budget, onEdit, onDelete }) => {

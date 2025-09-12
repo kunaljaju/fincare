@@ -330,6 +330,33 @@ router.put('/profile', authMiddleware, [
   }
 });
 
+// @route   GET /api/auth/verify
+// @desc    Verify JWT token
+// @access  Private
+router.get('/verify', authMiddleware, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: req.user._id,
+          name: req.user.name,
+          email: req.user.email,
+          preferences: req.user.preferences,
+          lastLogin: req.user.lastLogin,
+          createdAt: req.user.createdAt
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error verifying token'
+    });
+  }
+});
+
 // @route   POST /api/auth/logout
 // @desc    Logout user (client-side token removal)
 // @access  Private

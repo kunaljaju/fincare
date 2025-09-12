@@ -1,30 +1,223 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
-const Budget = require('../models/Budget');
 const Transaction = require('../models/Transaction');
+const Budget = require('../models/Budget');
+const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   GET /api/budgets
-// @desc    Get all budgets for the current user
+// @route   GET /api/analytics/summary
+// @desc    Get financial summary
 // @access  Private
-router.get('/', async (req, res) => {
+router.get('/summary', authMiddleware, async (req, res) => {
   try {
-    const budgets = await Budget.find({ user: req.user._id })
-      .sort({ createdAt: -1 });
+    const userId = req.user._id;
+    const { startDate, endDate } = req.query;
 
-    // Get spending data for each budget
-    const budgetsWithSpending = await Promise.all(
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) dateFilter.$gte = new Date(startDate);
+    if (endDate) dateFilter.$lte = new Date(endDate);
+
+    const filter = { user: userId };
+    if (Object.keys(dateFilter).length > 0) {
+      filter.date = dateFilter;
+    }
+
+    // Get all transactions
+    const transactions = await Transaction.find(filter);
+
+    // Calculate summary
+    const totalIncome = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpenses = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const balance = totalIncome - totalExpenses;
+
+    res.json({
+      success: true,
+      data: {
+        totalIncome,
+        totalExpenses,
+        balance,
+        transactionCount: transactions.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get summary error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching summary'
+    });
+  }
+});
+
+// @route   GET /api/analytics/categories
+// @desc    Get category breakdown
+// @access  Private
+router.get('/categories', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { startDate, endDate } = req.query;
+
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) dateFilter.$gte = new Date(startDate);
+    if (endDate) dateFilter.$lte = new Date(endDate);
+
+    const filter = { user: userId, type: 'expense' };
+    if (Object.keys(dateFilter).length > 0) {
+      filter.date = dateFilter;
+    }
+
+    // Get category breakdown
+    const categoryBreakdown = await Transaction.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: '$category',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          category: '$_id',
+          total: 1,
+          count: 1,
+          _id: 0
+        }
+      },
+      { $sort: { total: -1 } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        categories: categoryBreakdown
+      }
+    });
+
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching categories'
+    });
+  }
+});
+
+// @route   GET /api/analytics/trends
+// @desc    Get spending trends over time
+// @access  Private
+router.get('/trends', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { period = 'month', months = 6 } = req.query;
+
+    // Calculate date range
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    if (period === 'month') {
+      startDate.setMonth(endDate.getMonth() - parseInt(months));
+    } else if (period === 'week') {
+      startDate.setDate(endDate.getDate() - (parseInt(months) * 7));
+    } else if (period === 'year') {
+      startDate.setFullYear(endDate.getFullYear() - parseInt(months));
+    }
+
+    // Get monthly trends
+    const trends = await Transaction.aggregate([
+      {
+        $match: {
+          user: userId,
+          date: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$date' },
+            month: { $month: '$date' },
+            type: '$type'
+          },
+          total: { $sum: '$amount' }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: '$_id.year',
+            month: '$_id.month'
+          },
+          income: {
+            $sum: {
+              $cond: [{ $eq: ['$_id.type', 'income'] }, '$total', 0]
+            }
+          },
+          expenses: {
+            $sum: {
+              $cond: [{ $eq: ['$_id.type', 'expense'] }, '$total', 0]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          month: '$_id.month',
+          year: '$_id.year',
+          income: 1,
+          expenses: 1,
+          balance: { $subtract: ['$income', '$expenses'] },
+          _id: 0
+        }
+      },
+      { $sort: { year: 1, month: 1 } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        trends
+      }
+    });
+
+  } catch (error) {
+    console.error('Get trends error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching trends'
+    });
+  }
+});
+
+// @route   GET /api/analytics/budgets
+// @desc    Get budget performance
+// @access  Private
+router.get('/budgets', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all budgets
+    const budgets = await Budget.find({ user: userId });
+
+    // Calculate performance for each budget
+    const budgetPerformance = await Promise.all(
       budgets.map(async (budget) => {
-        const spending = await Transaction.aggregate([
+        const spent = await Transaction.aggregate([
           {
             $match: {
-              user: req.user._id,
+              user: userId,
               type: 'expense',
               category: budget.category,
               date: {
-                $gte: budget.startDate,
-                $lte: budget.endDate
+                $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
               }
             }
           },
@@ -36,187 +229,32 @@ router.get('/', async (req, res) => {
           }
         ]);
 
-        const spent = spending?.total || 0;
-        const percentage = budget.limit > 0 ? (spent / budget.limit) * 100 : 0;
+        const spentAmount = spent.length > 0 ? spent[0].total : 0;
+        const percentage = (spentAmount / budget.amount) * 100;
+        const remaining = budget.amount - spentAmount;
 
         return {
-          ...budget.toJSON(),
-          spent,
+          ...budget.toObject(),
+          spent: spentAmount,
+          remaining,
           percentage: Math.round(percentage * 100) / 100,
-          remaining: budget.limit - spent,
-          isOverBudget: spent > budget.limit,
-          isNearLimit: percentage >= budget.alertThreshold
+          status: percentage >= budget.alertThreshold ? 'warning' : 'good'
         };
       })
     );
 
     res.json({
       success: true,
-      data: { budgets: budgetsWithSpending }
+      data: {
+        budgets: budgetPerformance
+      }
     });
 
   } catch (error) {
-    console.error('Fetch budgets error:', error);
+    console.error('Get budget performance error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching budgets'
-    });
-  }
-});
-
-// @route   POST /api/budgets
-// @desc    Create a new budget
-// @access  Private
-router.post('/', [
-  body('category')
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Category is required and must be less than 50 characters'),
-  body('limit')
-    .isFloat({ min: 0.01 })
-    .withMessage('Budget limit must be greater than 0'),
-  body('period')
-    .optional()
-    .isIn(['monthly', 'weekly', 'yearly'])
-    .withMessage('Period must be monthly, weekly, or yearly'),
-  body('alertThreshold')
-    .optional()
-    .isFloat({ min: 0, max: 100 })
-    .withMessage('Alert threshold must be between 0 and 100')
-], async (req, res) => {
-  try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
-
-    const budgetData = {
-      ...req.body,
-      user: req.user._id
-    };
-
-    const budget = new Budget(budgetData);
-    await budget.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Budget created successfully',
-      data: { budget }
-    });
-
-  } catch (error) {
-    console.error('Create budget error:', error);
-    
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Budget already exists for this category and period'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error creating budget'
-    });
-  }
-});
-
-// @route   PUT /api/budgets/:id
-// @desc    Update a budget
-// @access  Private
-router.put('/:id', [
-  body('limit')
-    .optional()
-    .isFloat({ min: 0.01 })
-    .withMessage('Budget limit must be greater than 0'),
-  body('alertThreshold')
-    .optional()
-    .isFloat({ min: 0, max: 100 })
-    .withMessage('Alert threshold must be between 0 and 100'),
-  body('isActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean')
-], async (req, res) => {
-  try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
-
-    const budget = await Budget.findOne({
-      _id: req.params.id,
-      user: req.user._id
-    });
-
-    if (!budget) {
-      return res.status(404).json({
-        success: false,
-        message: 'Budget not found'
-      });
-    }
-
-    // Update budget
-    Object.keys(req.body).forEach(key => {
-      budget[key] = req.body[key];
-    });
-
-    await budget.save();
-
-    res.json({
-      success: true,
-      message: 'Budget updated successfully',
-      data: { budget }
-    });
-
-  } catch (error) {
-    console.error('Update budget error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error updating budget'
-    });
-  }
-});
-
-// @route   DELETE /api/budgets/:id
-// @desc    Delete a budget
-// @access  Private
-router.delete('/:id', async (req, res) => {
-  try {
-    const budget = await Budget.findOne({
-      _id: req.params.id,
-      user: req.user._id
-    });
-
-    if (!budget) {
-      return res.status(404).json({
-        success: false,
-        message: 'Budget not found'
-      });
-    }
-
-    await Budget.deleteOne({ _id: req.params.id });
-
-    res.json({
-      success: true,
-      message: 'Budget deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Delete budget error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error deleting budget'
+      message: 'Server error fetching budget performance'
     });
   }
 });

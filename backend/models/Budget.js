@@ -12,15 +12,15 @@ const budgetSchema = new mongoose.Schema({
     required: [true, 'Category is required'],
     trim: true
   },
-  limit: {
+  amount: {
     type: Number,
-    required: [true, 'Budget limit is required'],
-    min: [0.01, 'Budget limit must be greater than 0'],
+    required: [true, 'Budget amount is required'],
+    min: [0.01, 'Budget amount must be greater than 0'],
     validate: {
       validator: function(value) {
         return /^\d+(\.\d{1,2})?$/.test(value.toString());
       },
-      message: 'Budget limit can have at most 2 decimal places'
+      message: 'Budget amount can have at most 2 decimal places'
     }
   },
   period: {
@@ -82,12 +82,12 @@ budgetSchema.index(
   { unique: true }
 );
 
-// Virtual for formatted limit in INR
-budgetSchema.virtual('formattedLimit').get(function() {
+// Virtual for formatted amount in INR
+budgetSchema.virtual('formattedAmount').get(function() {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR'
-  }).format(this.limit);
+  }).format(this.amount);
 });
 
 // Instance method to check if budget period is active

@@ -8,7 +8,7 @@ import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import Analytics from './components/Analytics';
 import BudgetManager from './components/BudgetManager';
-import AuthLayout from './components/Authlayout';
+import AuthLayout from './components/AuthLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/Errorboundary';
 import { useState } from 'react';

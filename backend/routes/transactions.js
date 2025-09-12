@@ -1,46 +1,106 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
+const Transaction = require('../models/Transaction');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
-router.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Auth routes working!', 
-    timestamp: new Date(),
-    env_check: {
-      jwt_secret_exists: !!process.env.JWT_SECRET,
-      mongodb_uri_exists: !!process.env.MONGODB_URI
+
+// @route   GET /api/transactions
+// @desc    Get all transactions for a user
+// @access  Private
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const { type, category, startDate, endDate, limit } = req.query;
+    const userId = req.user._id;
+
+    // Build filter object
+    const filter = { user: userId };
+    
+    if (type) filter.type = type;
+    if (category) filter.category = category;
+    if (startDate || endDate) {
+      filter.date = {};
+      if (startDate) filter.date.$gte = new Date(startDate);
+      if (endDate) filter.date.$lte = new Date(endDate);
     }
-  });
+
+    // Build query
+    let query = Transaction.find(filter).sort({ date: -1 });
+    
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+
+    const transactions = await query;
+
+    res.json({
+      success: true,
+      data: transactions,
+      count: transactions.length
+    });
+
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching transactions'
+    });
+  }
 });
 
+// @route   GET /api/transactions/:id
+// @desc    Get single transaction
+// @access  Private
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const transaction = await Transaction.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
 
-// Generate JWT Token
-const generateToken = (userId) => {
-  return jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
-  );
-};
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
 
-// @route   POST /api/auth/register
-// @desc    Register a new user
-// @access  Public
-router.post('/register', [
-  body('name')
+    res.json({
+      success: true,
+      data: transaction
+    });
+
+  } catch (error) {
+    console.error('Get transaction error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching transaction'
+    });
+  }
+});
+
+// @route   POST /api/transactions
+// @desc    Create new transaction
+// @access  Private
+router.post('/', authMiddleware, [
+  body('type')
+    .isIn(['income', 'expense'])
+    .withMessage('Type must be either income or expense'),
+  body('amount')
+    .isNumeric()
+    .isFloat({ min: 0.01 })
+    .withMessage('Amount must be a positive number'),
+  body('description')
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Name must be between 2 and 50 characters'),
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
+    .isLength({ min: 1, max: 200 })
+    .withMessage('Description must be between 1 and 200 characters'),
+  body('category')
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Category must be between 1 and 50 characters'),
+  body('date')
+    .isISO8601()
+    .withMessage('Date must be a valid ISO 8601 date')
 ], async (req, res) => {
   try {
     // Check for validation errors
@@ -53,181 +113,63 @@ router.post('/register', [
       });
     }
 
-    const { name, email, password } = req.body;
+    const { type, amount, description, category, date, notes } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists with this email'
-      });
-    }
-
-    // Create new user
-    const user = new User({
-      name,
-      email,
-      password
+    // Create new transaction
+    const transaction = new Transaction({
+      user: req.user._id,
+      type,
+      amount: parseFloat(amount),
+      description: description.trim(),
+      category: category.trim(),
+      date: new Date(date),
+      notes: notes ? notes.trim() : ''
     });
 
-    await user.save();
-
-    // Generate token
-    const token = generateToken(user._id);
-
-    // Update last login
-    await user.updateLastLogin();
+    await transaction.save();
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          preferences: user.preferences,
-          lastLogin: user.lastLogin
-        }
-      }
+      message: 'Transaction created successfully',
+      data: transaction
     });
 
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Create transaction error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration'
+      message: 'Server error creating transaction'
     });
   }
 });
 
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
-router.post('/login', [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  body('password')
-    .exists()
-    .withMessage('Password is required')
-], async (req, res) => {
-  try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
-
-    const { email, password } = req.body;
-
-    // Find user by email and include password for comparison
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
-      });
-    }
-
-    // Validate password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Generate token
-    const token = generateToken(user._id);
-
-    // Update last login
-    await user.updateLastLogin();
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          preferences: user.preferences,
-          lastLogin: user.lastLogin
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during login'
-    });
-  }
-});
-
-// @route   GET /api/auth/profile
-// @desc    Get current user profile
+// @route   PUT /api/transactions/:id
+// @desc    Update transaction
 // @access  Private
-router.get('/profile', authMiddleware, async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: req.user._id,
-          name: req.user.name,
-          email: req.user.email,
-          preferences: req.user.preferences,
-          lastLogin: req.user.lastLogin,
-          createdAt: req.user.createdAt
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Profile fetch error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching profile'
-    });
-  }
-});
-
-// @route   PUT /api/auth/profile
-// @desc    Update user profile
-// @access  Private
-router.put('/profile', authMiddleware, [
-  body('name')
+router.put('/:id', authMiddleware, [
+  body('type')
+    .optional()
+    .isIn(['income', 'expense'])
+    .withMessage('Type must be either income or expense'),
+  body('amount')
+    .optional()
+    .isNumeric()
+    .isFloat({ min: 0.01 })
+    .withMessage('Amount must be a positive number'),
+  body('description')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Name must be between 2 and 50 characters'),
-  body('preferences.currency')
+    .isLength({ min: 1, max: 200 })
+    .withMessage('Description must be between 1 and 200 characters'),
+  body('category')
     .optional()
-    .isIn(['INR', 'USD', 'EUR', 'GBP'])
-    .withMessage('Invalid currency'),
-  body('preferences.language')
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Category must be between 1 and 50 characters'),
+  body('date')
     .optional()
-    .isIn(['en', 'hi'])
-    .withMessage('Invalid language')
+    .isISO8601()
+    .withMessage('Date must be a valid ISO 8601 date')
 ], async (req, res) => {
   try {
     // Check for validation errors
@@ -240,48 +182,134 @@ router.put('/profile', authMiddleware, [
       });
     }
 
-    const { name, preferences } = req.body;
-    const user = req.user;
+    const transaction = await Transaction.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
 
-    // Update fields
-    if (name) user.name = name;
-    if (preferences) {
-      user.preferences = { ...user.preferences, ...preferences };
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
     }
 
-    await user.save();
+    // Update fields
+    const { type, amount, description, category, date, notes } = req.body;
+    
+    if (type) transaction.type = type;
+    if (amount !== undefined) transaction.amount = parseFloat(amount);
+    if (description) transaction.description = description.trim();
+    if (category) transaction.category = category.trim();
+    if (date) transaction.date = new Date(date);
+    if (notes !== undefined) transaction.notes = notes.trim();
+
+    await transaction.save();
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
-      data: {
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          preferences: user.preferences,
-          lastLogin: user.lastLogin
-        }
-      }
+      message: 'Transaction updated successfully',
+      data: transaction
     });
 
   } catch (error) {
-    console.error('Profile update error:', error);
+    console.error('Update transaction error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error updating profile'
+      message: 'Server error updating transaction'
     });
   }
 });
 
-// @route   POST /api/auth/logout
-// @desc    Logout user (client-side token removal)
+// @route   DELETE /api/transactions/:id
+// @desc    Delete transaction
 // @access  Private
-router.post('/logout', authMiddleware, (req, res) => {
-  res.json({
-    success: true,
-    message: 'Logout successful'
-  });
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const transaction = await Transaction.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Transaction deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete transaction error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error deleting transaction'
+    });
+  }
+});
+
+// @route   GET /api/transactions/summary
+// @desc    Get transaction summary
+// @access  Private
+router.get('/summary', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { startDate, endDate } = req.query;
+
+    // Build date filter
+    const dateFilter = {};
+    if (startDate) dateFilter.$gte = new Date(startDate);
+    if (endDate) dateFilter.$lte = new Date(endDate);
+
+    const filter = { user: userId };
+    if (Object.keys(dateFilter).length > 0) {
+      filter.date = dateFilter;
+    }
+
+    // Get all transactions
+    const transactions = await Transaction.find(filter);
+
+    // Calculate summary
+    const totalIncome = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpenses = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const balance = totalIncome - totalExpenses;
+
+    // Get category breakdown
+    const categoryBreakdown = {};
+    transactions
+      .filter(t => t.type === 'expense')
+      .forEach(t => {
+        categoryBreakdown[t.category] = (categoryBreakdown[t.category] || 0) + t.amount;
+      });
+
+    res.json({
+      success: true,
+      data: {
+        totalIncome,
+        totalExpenses,
+        balance,
+        transactionCount: transactions.length,
+        categoryBreakdown
+      }
+    });
+
+  } catch (error) {
+    console.error('Get summary error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching summary'
+    });
+  }
 });
 
 module.exports = router;

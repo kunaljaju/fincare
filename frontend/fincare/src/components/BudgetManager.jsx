@@ -10,10 +10,14 @@ const BudgetManager = () => {
     addBudget, 
     updateBudget, 
     deleteBudget,
-    categories,
-    loading, 
-    error 
+    loading
   } = useFinance();
+
+  // Mock categories for budget creation
+  const categories = [
+    'Food', 'Transportation', 'Entertainment', 'Rent', 'Utilities',
+    'Healthcare', 'Shopping', 'Education', 'Travel', 'Other'
+  ];
 
   const [showForm, setShowForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);

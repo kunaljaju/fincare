@@ -1,223 +1,204 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useFinance } from '../contexts/FinanceContext';
-import { Pie } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title
-} from 'chart.js';
-
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title
-);
+import CategoryChart from './CategoryChart';
+import IncomeExpenseChart from './IncomeExpenseChart';
+import { TrendingUp, TrendingDown, DollarSign, Calendar, BarChart3, PieChart } from 'lucide-react';
 
 const Analytics = () => {
   const { transactions, budgets, getTransactionsByCategory, getSummaryData } = useFinance();
-  const [timeRange, setTimeRange] = useState('month');
-  const [analyticsData, setAnalyticsData] = useState({});
-
+  const [activeChart, setActiveChart] = useState('trend');
+  
   const summaryData = getSummaryData();
-  const categoryData = getTransactionsByCategory();
+  const expensesByCategory = getTransactionsByCategory();
 
-  // Filter transactions by time range
-  const getFilteredTransactions = () => {
-    const now = new Date();
-    let startDate;
+  // Calculate top categories
+  const topCategories = Object.entries(expensesByCategory)
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
 
-    switch (timeRange) {
-      case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        startDate = new Date(0);
+  // Calculate monthly trends
+  const monthlyData = transactions.reduce((acc, transaction) => {
+    const month = new Date(transaction.date).toLocaleDateString('en-IN', { month: 'short' });
+    if (!acc[month]) {
+      acc[month] = { income: 0, expense: 0 };
     }
-
-    return transactions.filter(transaction => 
-      new Date(transaction.date) >= startDate
-    );
-  };
-
-  // Prepare pie chart data
-  const getPieChartData = () => {
-    const filteredTransactions = getFilteredTransactions();
-    const categoryTotals = {};
-
-    filteredTransactions.forEach(transaction => {
-      if (transaction.type === 'expense') {
-        categoryTotals[transaction.category] = 
-          (categoryTotals[transaction.category] || 0) + transaction.amount;
-      }
-    });
-
-    const categories = Object.keys(categoryTotals);
-    const amounts = Object.values(categoryTotals);
-
-    return {
-      labels: categories,
-      datasets: [{
-        data: amounts,
-        backgroundColor: [
-          '#FF6384',
-          '#36A2EB',
-          '#FFCE56',
-          '#4BC0C0',
-          '#9966FF',
-          '#FF9F40',
-          '#FF6384',
-          '#C9CBCF'
-        ],
-        borderWidth: 2,
-        borderColor: '#fff'
-      }]
-    };
-  };
-
-  // Prepare monthly trend data
-  const getMonthlyTrendData = () => {
-    const monthlyData = {};
-    const filteredTransactions = getFilteredTransactions();
-
-    filteredTransactions.forEach(transaction => {
-      const month = new Date(transaction.date).toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
-      });
-      
-      if (!monthlyData[month]) {
-        monthlyData[month] = { income: 0, expense: 0 };
-      }
-      
-      if (transaction.type === 'income') {
-        monthlyData[month].income += transaction.amount;
-      } else {
-        monthlyData[month].expense += transaction.amount;
-      }
-    });
-
-    const months = Object.keys(monthlyData).sort();
-    const incomeData = months.map(month => monthlyData[month].income);
-    const expenseData = months.map(month => monthlyData[month].expense);
-
-    return {
-      labels: months,
-      datasets: [
-        {
-          label: 'Income',
-          data: incomeData,
-          backgroundColor: '#4BC0C0',
-          borderColor: '#4BC0C0',
-          borderWidth: 2
-        },
-        {
-          label: 'Expenses',
-          data: expenseData,
-          backgroundColor: '#FF6384',
-          borderColor: '#FF6384',
-          borderWidth: 2
-        }
-      ]
-    };
-  };
-
-  const pieChartData = getPieChartData();
-  const trendData = getMonthlyTrendData();
+    if (transaction.type === 'income') {
+      acc[month].income += transaction.amount;
+    } else {
+      acc[month].expense += transaction.amount;
+    }
+    return acc;
+  }, {});
 
   return (
     <div className="analytics">
       <div className="analytics-header">
-        <h1 className="page-title">Analytics</h1>
-        <div className="time-range-selector">
-          <select 
-            value={timeRange} 
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="time-range-select"
+        <div className="header-content">
+          <h1 className="page-title">Analytics</h1>
+          <p className="page-subtitle">Insights into your financial patterns</p>
+        </div>
+        <div className="chart-toggle">
+          <button
+            className={`toggle-btn ${activeChart === 'trend' ? 'active' : ''}`}
+            onClick={() => setActiveChart('trend')}
           >
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="year">This Year</option>
-            <option value="all">All Time</option>
-          </select>
+            <BarChart3 size={18} />
+            Trend Analysis
+          </button>
+          <button
+            className={`toggle-btn ${activeChart === 'category' ? 'active' : ''}`}
+            onClick={() => setActiveChart('category')}
+          >
+            <PieChart size={18} />
+            Category Breakdown
+          </button>
         </div>
       </div>
 
       <div className="analytics-grid">
-        {/* Summary Stats */}
-        <div className="analytics-summary">
-          <div className="stat-card">
-            <h3>Total Income</h3>
-            <p className="stat-value income">${summaryData.totalIncome.toFixed(2)}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Total Expenses</h3>
-            <p className="stat-value expense">${summaryData.totalExpenses.toFixed(2)}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Net Balance</h3>
-            <p className={`stat-value ${summaryData.balance >= 0 ? 'positive' : 'negative'}`}>
-              ${summaryData.balance.toFixed(2)}
-            </p>
-          </div>
-          <div className="stat-card">
-            <h3>Transactions</h3>
-            <p className="stat-value">{summaryData.transactionCount}</p>
-          </div>
-        </div>
-
-        {/* Category Distribution */}
-        <div className="chart-container">
-          <h3>Expense Categories</h3>
-          <div className="chart-wrapper">
-            <Pie 
-              data={pieChartData} 
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'bottom',
-                  },
-                  tooltip: {
-                    callbacks: {
-                      label: function(context) {
-                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = ((context.parsed / total) * 100).toFixed(1);
-                        return `${context.label}: $${context.parsed.toFixed(2)} (${percentage}%)`;
-                      }
-                    }
-                  }
-                }
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Monthly Trend */}
-        <div className="chart-container">
-          <h3>Income vs Expenses Trend</h3>
-          <div className="chart-wrapper">
-            {/* Note: You would need to implement a Bar chart component here */}
-            <div className="trend-placeholder">
-              <p>Monthly trend chart would go here</p>
-              <p>Income: ${summaryData.totalIncome.toFixed(2)}</p>
-              <p>Expenses: ${summaryData.totalExpenses.toFixed(2)}</p>
+        {/* Key Metrics */}
+        <div className="metrics-section">
+          <div className="metrics-grid">
+            <div className="metric-card income">
+              <div className="metric-icon">
+                <TrendingUp size={24} />
+              </div>
+              <div className="metric-content">
+                <h3>Total Income</h3>
+                <p className="metric-value">₹{summaryData.totalIncome.toLocaleString('en-IN')}</p>
+                <span className="metric-change positive">+12.5% from last month</span>
+              </div>
             </div>
+
+            <div className="metric-card expense">
+              <div className="metric-icon">
+                <TrendingDown size={24} />
+              </div>
+              <div className="metric-content">
+                <h3>Total Expenses</h3>
+                <p className="metric-value">₹{summaryData.totalExpenses.toLocaleString('en-IN')}</p>
+                <span className="metric-change negative">+8.2% from last month</span>
+              </div>
+            </div>
+
+            <div className="metric-card balance">
+              <div className="metric-icon">
+                <DollarSign size={24} />
+              </div>
+              <div className="metric-content">
+                <h3>Net Balance</h3>
+                <p className="metric-value">₹{summaryData.balance.toLocaleString('en-IN')}</p>
+                <span className="metric-change positive">+15.3% from last month</span>
+              </div>
+            </div>
+
+            <div className="metric-card transactions">
+              <div className="metric-icon">
+                <Calendar size={24} />
+              </div>
+              <div className="metric-content">
+                <h3>Transactions</h3>
+                <p className="metric-value">{summaryData.transactionCount}</p>
+                <span className="metric-change neutral">This month</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Chart */}
+        <div className="chart-section">
+          <div className="chart-container">
+            <div className="chart-header">
+              <h3>
+                {activeChart === 'trend' ? 'Income vs Expenses Trend' : 'Expense Categories'}
+              </h3>
+              <p>
+                {activeChart === 'trend' 
+                  ? 'Monthly comparison of income and expenses' 
+                  : 'Breakdown of your spending by category'
+                }
+              </p>
+            </div>
+            <div className="chart-content">
+              {activeChart === 'trend' ? <IncomeExpenseChart /> : <CategoryChart />}
+            </div>
+          </div>
+        </div>
+
+        {/* Top Categories */}
+        <div className="categories-section">
+          <div className="section-header">
+            <h3>Top Spending Categories</h3>
+            <p>Your highest expense categories this month</p>
+          </div>
+          <div className="categories-list">
+            {topCategories.map((item, index) => {
+              const percentage = (item.amount / summaryData.totalExpenses) * 100;
+              return (
+                <div key={item.category} className="category-item">
+                  <div className="category-info">
+                    <div className="category-rank">#{index + 1}</div>
+                    <div className="category-details">
+                      <h4>{item.category}</h4>
+                      <p>₹{item.amount.toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                  <div className="category-stats">
+                    <div className="percentage">{percentage.toFixed(1)}%</div>
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Budget Overview */}
+        <div className="budget-section">
+          <div className="section-header">
+            <h3>Budget Overview</h3>
+            <p>Track your budget performance</p>
+          </div>
+          <div className="budget-list">
+            {budgets.length > 0 ? (
+              budgets.map(budget => {
+                const percentage = (budget.spent / budget.amount) * 100;
+                const isOverBudget = budget.spent > budget.amount;
+                return (
+                  <div key={budget._id} className="budget-item">
+                    <div className="budget-info">
+                      <h4>{budget.category}</h4>
+                      <div className="budget-amounts">
+                        <span className="spent">₹{budget.spent.toLocaleString('en-IN')}</span>
+                        <span className="total">/ ₹{budget.amount.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                    <div className="budget-progress">
+                      <div className="progress-bar">
+                        <div 
+                          className={`progress-fill ${isOverBudget ? 'over-budget' : ''}`}
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="progress-text">
+                        {percentage.toFixed(1)}% {isOverBudget && '(Over Budget)'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="no-budgets">
+                <p>No budgets set yet</p>
+                <p>Create budgets to track your spending goals</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

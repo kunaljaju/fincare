@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../utils/currencyUtils';
+import { formatCurrency } from '../utils/CurrencyUtils';
 
 const SummaryCard = ({ title, amount, icon: Icon, color }) => {
   return (
