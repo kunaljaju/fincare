@@ -1,0 +1,142 @@
+:root {
+  /* FinCare Brand Colors */
+  --fincare-primary: #08152b;
+  --fincare-secondary: #10b981;
+  --fincare-accent: #f59e0b;
+  --fincare-gradient: linear-gradient(135deg, #08152b 0%, #1e3a8a 50%, #10b981 100%);
+  --fincare-glow: 0 0 20px rgba(8, 21, 43, 0.6);
+  
+  /* Base Colors */
+  --primary-color: #1e3a8a;
+  --primary-hover: #1e40af;
+  --secondary-color: #64748b;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --warning-color: #f59e0b;
+  --background: #050a12;
+  --surface: #0f1419;
+  --surface-elevated: #1a1f26;
+  --border: #2a2f36;
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  
+  /* Glow Effects */
+  --glow-primary: 0 0 20px rgba(8, 21, 43, 0.5);
+  --glow-success: 0 0 20px rgba(16, 185, 129, 0.4);
+  --glow-danger: 0 0 20px rgba(239, 68, 68, 0.4);
+  --glow-warning: 0 0 20px rgba(245, 158, 11, 0.4);
+  
+  /* Typography */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Reset and Base Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', monospace;
+  font-weight: 400;
+  color: var(--text-primary);
+  background: 
+    linear-gradient(135deg, #050a12 0%, #0f1419 50%, #08152b 100%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M0 0h60v60H0z'/%3E%3Crect x='5' y='45' width='8' height='15'/%3E%3Crect x='15' y='35' width='8' height='25'/%3E%3Crect x='25' y='25' width='8' height='35'/%3E%3Crect x='35' y='15' width='8' height='45'/%3E%3Crect x='45' y='5' width='8' height='55'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-attachment: fixed;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Remove default button styles */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* Remove default input styles */
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+}
+
+/* Remove default list styles */
+ul,
+ol {
+  list-style: none;
+}
+
+/* Remove default link styles */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Make images responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Ensure root element takes full height */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--fincare-primary);
+  outline-offset: 2px;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Print styles */
+@media print {
+  * {
+    accent-color: exact;
+  }
+}

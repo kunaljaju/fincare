@@ -1,0 +1,257 @@
+import React, { useState, useEffect } from 'react';
+import { useFinance } from '../contexts/FinanceContext';
+import BudgetProgress from './BudgetProgress';
+import LoadingSpinner from './LoadingSpinner';
+import { Plus, Target, AlertCircle } from 'lucide-react';
+
+const BudgetManager = () => {
+  const { 
+    budgets, 
+    addBudget, 
+    updateBudget, 
+    deleteBudget,
+    categories,
+    loading, 
+    error 
+  } = useFinance();
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
+  const [formData, setFormData] = useState({
+    category: '',
+    limit: '',
+    period: 'monthly',
+    alertThreshold: 80
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    if (editingBudget) {
+      setFormData({
+        category: editingBudget.category,
+        limit: editingBudget.limit.toString(),
+        period: editingBudget.period,
+        alertThreshold: editingBudget.alertThreshold
+      });
+      setShowForm(true);
+    }
+  }, [editingBudget]);
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (formError) setFormError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setFormError('');
+
+    try {
+      if (!formData.category.trim()) {
+        setFormError('Please select a category');
+        return;
+      }
+
+      if (!formData.limit || parseFloat(formData.limit) <= 0) {
+        setFormError('Please enter a valid budget limit');
+        return;
+      }
+
+      const budgetData = {
+        ...formData,
+        limit: parseFloat(formData.limit),
+        alertThreshold: parseFloat(formData.alertThreshold)
+      };
+
+      if (editingBudget) {
+        await updateBudget(editingBudget._id, budgetData);
+      } else {
+        await addBudget(budgetData);
+      }
+
+      // Reset form
+      setFormData({
+        category: '',
+        limit: '',
+        period: 'monthly',
+        alertThreshold: 80
+      });
+      setShowForm(false);
+      setEditingBudget(null);
+
+    } catch (err) {
+      setFormError(err.message || 'Failed to save budget');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEdit = (budget) => {
+    setEditingBudget(budget);
+  };
+
+  const handleDelete = async (budgetId) => {
+    if (window.confirm('Are you sure you want to delete this budget?')) {
+      try {
+        await deleteBudget(budgetId);
+      } catch (err) {
+        console.error('Failed to delete budget:', err);
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingBudget(null);
+    setFormData({
+      category: '',
+      limit: '',
+      period: 'monthly',
+      alertThreshold: 80
+    });
+    setFormError('');
+  };
+
+  const availableCategories = categories.expense || [];
+
+  return (
+    <div className="budget-manager">
+      <div className="budget-header">
+        <h2 className="section-title">Budget Manager</h2>
+        <p className="section-subtitle">Set spending limits and track your budget progress</p>
+        
+        <button 
+          className="btn btn-primary"
+          onClick={() => setShowForm(!showForm)}
+        >
+          <Plus size={18} />
+          {showForm ? 'Cancel' : 'Add Budget'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="error-banner">
+          <AlertCircle size={18} />
+          {error}
+        </div>
+      )}
+
+      {/* Budget Form */}
+      {showForm && (
+        <div className="budget-form">
+          <h3>{editingBudget ? 'Edit Budget' : 'Create New Budget'}</h3>
+          
+          <form onSubmit={handleSubmit}>
+            {formError && (
+              <div className="error-banner">
+                {formError}
+              </div>
+            )}
+
+            <div className="form-group">
+              <label>Category</label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleFormChange}
+                required
+              >
+                <option value="">Select Category</option>
+                {availableCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Budget Limit (₹)</label>
+              <div className="input-wrapper">
+                <span className="input-prefix">₹</span>
+                <input
+                  type="number"
+                  name="limit"
+                  value={formData.limit}
+                  onChange={handleFormChange}
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Period</label>
+              <select
+                name="period"
+                value={formData.period}
+                onChange={handleFormChange}
+              >
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Alert Threshold (%)</label>
+              <input
+                type="number"
+                name="alertThreshold"
+                value={formData.alertThreshold}
+                onChange={handleFormChange}
+                min="0"
+                max="100"
+                placeholder="80"
+              />
+              <small>Get notified when spending reaches this percentage</small>
+            </div>
+
+            <div className="form-actions">
+              <button type="button" onClick={handleCancel} className="btn btn-secondary">
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : (editingBudget ? 'Update' : 'Create')} Budget
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Budget List */}
+      <div className="budget-list">
+        {loading ? (
+          <LoadingSpinner message="Loading budgets..." />
+        ) : budgets.length === 0 ? (
+          <div className="empty-state">
+            <Target size={48} />
+            <h3>No budgets created yet</h3>
+            <p>Create your first budget to start tracking your spending limits</p>
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowForm(true)}
+            >
+              <Plus size={18} />
+              Create Budget
+            </button>
+          </div>
+        ) : (
+          budgets.map(budget => (
+            <BudgetProgress
+              key={budget._id}
+              budget={budget}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default BudgetManager;
