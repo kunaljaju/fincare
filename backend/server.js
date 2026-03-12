@@ -46,36 +46,22 @@ mongoose.connect(process.env.MONGODB_URI)
   console.log('✅ Connected to MongoDB Atlas');
 })
 .catch((error) => {
-  console.error('❌ MongoDB connection error:', error);
+  console.error('❌ MongoDB connection error:', error.message);
   console.log('💡 Make sure to:');
-  console.log('   1. Replace <db_password> in .env with your actual MongoDB password');
+  console.log('   1. Replace the MONGODB_URI in .env with your actual MongoDB connection string');
   console.log('   2. Check your internet connection');
   console.log('   3. Verify MongoDB Atlas cluster is running');
   console.log('   4. Check IP whitelist in MongoDB Atlas');
   // Don't exit process, let server run for testing
 });
 
-// NEW - Test routes first (no auth needed)
-app.get('/api/transactions/test', (req, res) => {
-  res.json({ message: 'Transactions working!', timestamp: new Date() });
-});
-
-app.get('/api/budgets/test', (req, res) => {
-  res.json({ message: 'Budgets working!', timestamp: new Date() });
-});
-
-app.get('/api/analytics/test', (req, res) => {
-  res.json({ message: 'Analytics working!', timestamp: new Date() });
-});
-
-app.get('/api/auth/test', (req, res) => {
-  res.json({ 
-    message: 'Auth routes working!', 
-    timestamp: new Date(),
-    env_check: {
-      jwt_secret_exists: !!process.env.JWT_SECRET,
-      mongodb_uri_exists: !!process.env.MONGODB_URI
-    }
+// Health check endpoint (no auth needed)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'FinCare API is running',
+    timestamp: new Date().toISOString(),
+    dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
@@ -87,27 +73,18 @@ app.use('/api/transactions', authMiddleware, transactionRoutes);
 app.use('/api/budgets', authMiddleware, budgetRoutes);
 app.use('/api/analytics', authMiddleware, analyticsRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'FinCare API is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Error handling middleware
-app.use(errorHandler);
-
-// Handle 404 for API routes - FIXED VERSION
+// Handle 404 for API routes
 app.use('/api', (req, res) => {
   res.status(404).json({ message: 'API endpoint not found' });
 });
 
-// Handle 404 for all other routes - FIXED VERSION  
-app.use((req, res) => {
+// Handle 404 for all other routes
+app.use((req, res, next) => {
   res.status(404).json({ message: 'Route not found' });
 });
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

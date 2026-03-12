@@ -1,30 +1,10 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const generateToken = require('../utils/generateToken');
 
 const router = express.Router();
-// Add this right after const router = express.Router();
-router.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Auth routes working!', 
-    timestamp: new Date(),
-    env_check: {
-      jwt_secret_exists: !!process.env.JWT_SECRET,
-      mongodb_uri_exists: !!process.env.MONGODB_URI
-    }
-  });
-});
-
-// Generate JWT Token
-const generateToken = (userId) => {
-  return jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
-  );
-};
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -55,14 +35,8 @@ router.post('/register', [
 
     const { name, email, password } = req.body;
 
-    // Check if user already exists (skip if MongoDB not connected)
-    let existingUser = null;
-    try {
-      existingUser = await User.findOne({ email });
-    } catch (dbError) {
-      console.log('Database not connected, skipping user existence check');
-    }
-    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -70,42 +44,20 @@ router.post('/register', [
       });
     }
 
-    // Create new user (skip database save if MongoDB not connected)
-    let user;
-    let token;
-    
-    try {
-      user = new User({
-        name,
-        email,
-        password
-      });
+    // Create new user
+    const user = new User({
+      name,
+      email,
+      password
+    });
 
-      await user.save();
+    await user.save();
 
-      // Generate token
-      token = generateToken(user._id);
+    // Generate token
+    const token = generateToken(user._id);
 
-      // Update last login
-      await user.updateLastLogin();
-    } catch (dbError) {
-      console.log('Database not connected, creating mock user for testing');
-      // Create a mock user object for testing
-      user = {
-        _id: 'mock_user_id_' + Date.now(),
-        name,
-        email,
-        preferences: {
-          currency: 'USD',
-          dateFormat: 'MM/DD/YYYY',
-          theme: 'dark'
-        },
-        lastLogin: new Date()
-      };
-      
-      // Generate token with mock user ID
-      token = generateToken(user._id);
-    }
+    // Update last login
+    await user.updateLastLogin();
 
     res.status(201).json({
       success: true,
@@ -117,9 +69,8 @@ router.post('/register', [
           name: user.name,
           email: user.email,
           preferences: user.preferences || {
-            currency: 'USD',
-            dateFormat: 'MM/DD/YYYY',
-            theme: 'dark'
+            currency: 'INR',
+            language: 'en'
           },
           lastLogin: user.lastLogin || new Date()
         }
@@ -223,12 +174,15 @@ router.get('/verify', authMiddleware, async (req, res) => {
   try {
     res.json({
       success: true,
-      user: {
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        preferences: req.user.preferences,
-        lastLogin: req.user.lastLogin
+      data: {
+        user: {
+          id: req.user._id,
+          name: req.user.name,
+          email: req.user.email,
+          preferences: req.user.preferences,
+          lastLogin: req.user.lastLogin,
+          createdAt: req.user.createdAt
+        }
       }
     });
   } catch (error) {
@@ -326,33 +280,6 @@ router.put('/profile', authMiddleware, [
     res.status(500).json({
       success: false,
       message: 'Server error updating profile'
-    });
-  }
-});
-
-// @route   GET /api/auth/verify
-// @desc    Verify JWT token
-// @access  Private
-router.get('/verify', authMiddleware, async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: req.user._id,
-          name: req.user.name,
-          email: req.user.email,
-          preferences: req.user.preferences,
-          lastLogin: req.user.lastLogin,
-          createdAt: req.user.createdAt
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Token verification error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error verifying token'
     });
   }
 });

@@ -16,7 +16,7 @@ const errorHandler = (err, req, res, next) => {
     
     // Extract field name from error
     const field = Object.keys(err.keyValue);
-    if (field === 'email') {
+    if (field.includes('email')) {
       message = 'Email already exists';
     }
     

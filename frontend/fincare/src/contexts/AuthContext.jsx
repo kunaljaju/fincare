@@ -28,100 +28,10 @@ export const AuthProvider = ({ children }) => {
       // Verify token with backend
       verifyToken();
     } else {
-      // Immediately set up mock user for demo
-      setupMockUser();
-    }
-  }, []);
-
-  const setupMockUser = () => {
-    // Clear any existing auth data
-    localStorage.removeItem('token');
-    localStorage.removeItem('demoDataAdded');
-    
-    // Immediately set up mock user for demo
-    const mockUser = {
-      id: 'demo-user-123',
-      name: 'Demo User',
-      email: 'demo@fincare.com',
-      preferences: {
-        currency: 'INR',
-        theme: 'dark'
-      }
-    };
-    setUser(mockUser);
-    setIsAuthenticated(true);
-    setLoading(false);
-  };
-
-  const autoRegisterDemoUser = async () => {
-    try {
-      // First try to login with demo credentials
-      try {
-        const loginResult = await login('demo@fincare.com', 'demo123456');
-        if (loginResult.success) {
-          return; // Success, exit early
-        }
-      } catch (loginError) {
-        console.log('Login failed, trying registration...');
-      }
-
-      // If login fails, try to register
-      try {
-        const response = await axios.post('/auth/register', {
-          name: 'Demo User',
-          email: 'demo@fincare.com',
-          password: 'demo123456'
-        });
-        
-        if (response.data.success) {
-          const { token, user } = response.data.data;
-          localStorage.setItem('token', token);
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          setUser(user);
-          setIsAuthenticated(true);
-        }
-      } catch (registerError) {
-        console.log('Registration failed, user might already exist. Trying login again...');
-        // Try login one more time in case user was created
-        try {
-          const loginResult = await login('demo@fincare.com', 'demo123456');
-          if (loginResult.success) {
-            return;
-          }
-        } catch (finalError) {
-          console.error('All attempts failed:', finalError);
-          // Set a temporary mock user for demo purposes
-          const mockUser = {
-            id: 'demo-user-123',
-            name: 'Demo User',
-            email: 'demo@fincare.com',
-            preferences: {
-              currency: 'INR',
-              theme: 'dark'
-            }
-          };
-          setUser(mockUser);
-          setIsAuthenticated(true);
-        }
-      }
-    } catch (error) {
-      console.error('Auto-register failed:', error);
-      // Set a temporary mock user for demo purposes
-      const mockUser = {
-        id: 'demo-user-123',
-        name: 'Demo User',
-        email: 'demo@fincare.com',
-        preferences: {
-          currency: 'INR',
-          theme: 'dark'
-        }
-      };
-      setUser(mockUser);
-      setIsAuthenticated(true);
-    } finally {
+      // No token found — show login screen
       setLoading(false);
     }
-  };
+  }, []);
 
   const verifyToken = async () => {
     try {
@@ -160,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Login failed:', error);
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Login failed' 
+        error: error.response?.data?.message || 'Login failed. Please check your credentials.' 
       };
     }
   };
@@ -182,7 +92,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Registration failed:', error);
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Registration failed' 
+        error: error.response?.data?.message || 'Registration failed. Please try again.' 
       };
     }
   };

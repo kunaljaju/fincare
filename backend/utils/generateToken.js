@@ -7,16 +7,9 @@ const jwt = require('jsonwebtoken');
  */
 const generateToken = (userId) => {
   return jwt.sign(
-    { 
-      id: userId,
-      iat: Math.floor(Date.now() / 1000)
-    },
+    { id: userId },
     process.env.JWT_SECRET,
-    { 
-      expiresIn: process.env.JWT_EXPIRE || '7d',
-      issuer: 'fincare-api',
-      audience: 'fincare-app'
-    }
+    { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
 };
 
