@@ -12,7 +12,7 @@ Create a `.env` file in the `backend` directory with the following variables:
 
 ```env
 # Database Configuration
-MONGODB_URI=mongodb+srv://kunal1902:123456@fincare.nsuxwpd.mongodb.net/?retryWrites=true&w=majority&appName=fincare
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/fincare?retryWrites=true&w=majority
 
 # JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here_change_this_in_production
