@@ -112,3 +112,7 @@ Thumbs.db
 # Build outputs
 build/
 dist/
+
+# Local backups
+* - Copy/
+*-copy/

@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFinance } from '../contexts/FinanceContext';
 import CategoryChart from './CategoryChart';
 import IncomeExpenseChart from './IncomeExpenseChart';
+import LoadingSpinner from './LoadingSpinner';
 import { TrendingUp, TrendingDown, DollarSign, Calendar, BarChart3, PieChart } from 'lucide-react';
 
 const Analytics = () => {
-  const { transactions, budgets, getTransactionsByCategory, getSummaryData } = useFinance();
+  const { 
+    transactions, 
+    budgets, 
+    getTransactionsByCategory, 
+    getSummaryData,
+    fetchTransactions,
+    fetchBudgets,
+    loading 
+  } = useFinance();
   const [activeChart, setActiveChart] = useState('trend');
   
+  useEffect(() => {
+    fetchTransactions();
+    fetchBudgets();
+  }, [fetchTransactions, fetchBudgets]);
+
+  if (loading) {
+    return <LoadingSpinner message="Loading analytics..." />;
+  }
+
   const summaryData = getSummaryData();
   const expensesByCategory = getTransactionsByCategory();
 
@@ -36,23 +54,6 @@ const Analytics = () => {
       <div className="analytics-header">
         <div className="header-content">
           <h1 className="page-title">Analytics</h1>
-          <p className="page-subtitle">Insights into your financial patterns</p>
-        </div>
-        <div className="chart-toggle">
-          <button
-            className={`toggle-btn ${activeChart === 'trend' ? 'active' : ''}`}
-            onClick={() => setActiveChart('trend')}
-          >
-            <BarChart3 size={18} />
-            Trend Analysis
-          </button>
-          <button
-            className={`toggle-btn ${activeChart === 'category' ? 'active' : ''}`}
-            onClick={() => setActiveChart('category')}
-          >
-            <PieChart size={18} />
-            Category Breakdown
-          </button>
         </div>
       </div>
 
@@ -106,22 +107,22 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Main Chart */}
-        <div className="chart-section">
-          <div className="chart-container">
-            <div className="chart-header">
-              <h3>
-                {activeChart === 'trend' ? 'Income vs Expenses Trend' : 'Expense Categories'}
-              </h3>
-              <p>
-                {activeChart === 'trend' 
-                  ? 'Monthly comparison of income and expenses' 
-                  : 'Breakdown of your spending by category'
-                }
-              </p>
+        {/* Charts */}
+        <div className="chart-section" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div className="chart-container" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+            <div className="chart-header" style={{ textAlign: 'center' }}>
+              <h3>Income vs Expenses Trend</h3>
             </div>
             <div className="chart-content">
-              {activeChart === 'trend' ? <IncomeExpenseChart /> : <CategoryChart />}
+              <IncomeExpenseChart />
+            </div>
+          </div>
+          <div className="chart-container" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+            <div className="chart-header" style={{ textAlign: 'center' }}>
+              <h3>Expense Categories</h3>
+            </div>
+            <div className="chart-content">
+              <CategoryChart />
             </div>
           </div>
         </div>

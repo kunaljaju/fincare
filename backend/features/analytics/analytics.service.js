@@ -1,19 +1,9 @@
-const express = require('express');
-const Transaction = require('../models/Transaction');
-const Budget = require('../models/Budget');
-const authMiddleware = require('../middleware/auth');
+const Transaction = require('../transactions/transaction.model');
+const Budget = require('../budgets/budget.model');
+const mongoose = require('mongoose');
 
-const router = express.Router();
-
-// @route   GET /api/analytics/summary
-// @desc    Get financial summary
-// @access  Private
-router.get('/summary', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { startDate, endDate } = req.query;
-
-    // Build date filter
+class AnalyticsService {
+  async getSummary(userId, { startDate, endDate }) {
     const dateFilter = {};
     if (startDate) dateFilter.$gte = new Date(startDate);
     if (endDate) dateFilter.$lte = new Date(endDate);
@@ -23,10 +13,8 @@ router.get('/summary', authMiddleware, async (req, res) => {
       filter.date = dateFilter;
     }
 
-    // Get all transactions
     const transactions = await Transaction.find(filter);
 
-    // Calculate summary
     const totalIncome = transactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -37,44 +25,24 @@ router.get('/summary', authMiddleware, async (req, res) => {
 
     const balance = totalIncome - totalExpenses;
 
-    res.json({
-      success: true,
-      data: {
-        totalIncome,
-        totalExpenses,
-        balance,
-        transactionCount: transactions.length
-      }
-    });
-
-  } catch (error) {
-    console.error('Get summary error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching summary'
-    });
+    return {
+      totalIncome,
+      totalExpenses,
+      balance,
+      transactionCount: transactions.length
+    };
   }
-});
 
-// @route   GET /api/analytics/categories
-// @desc    Get category breakdown
-// @access  Private
-router.get('/categories', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { startDate, endDate } = req.query;
-
-    // Build date filter
+  async getCategories(userId, { startDate, endDate }) {
     const dateFilter = {};
     if (startDate) dateFilter.$gte = new Date(startDate);
     if (endDate) dateFilter.$lte = new Date(endDate);
 
-    const filter = { user: userId, type: 'expense' };
+    const filter = { user: new mongoose.Types.ObjectId(userId), type: 'expense' };
     if (Object.keys(dateFilter).length > 0) {
       filter.date = dateFilter;
     }
 
-    // Get category breakdown
     const categoryBreakdown = await Transaction.aggregate([
       { $match: filter },
       {
@@ -95,31 +63,10 @@ router.get('/categories', authMiddleware, async (req, res) => {
       { $sort: { total: -1 } }
     ]);
 
-    res.json({
-      success: true,
-      data: {
-        categories: categoryBreakdown
-      }
-    });
-
-  } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching categories'
-    });
+    return { categories: categoryBreakdown };
   }
-});
 
-// @route   GET /api/analytics/trends
-// @desc    Get spending trends over time
-// @access  Private
-router.get('/trends', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { period = 'month', months = 6 } = req.query;
-
-    // Calculate date range
+  async getTrends(userId, { period = 'month', months = 6 }) {
     const endDate = new Date();
     const startDate = new Date();
     
@@ -131,11 +78,10 @@ router.get('/trends', authMiddleware, async (req, res) => {
       startDate.setFullYear(endDate.getFullYear() - parseInt(months));
     }
 
-    // Get monthly trends
     const trends = await Transaction.aggregate([
       {
         $match: {
-          user: userId,
+          user: new mongoose.Types.ObjectId(userId),
           date: { $gte: startDate, $lte: endDate }
         }
       },
@@ -180,44 +126,29 @@ router.get('/trends', authMiddleware, async (req, res) => {
       { $sort: { year: 1, month: 1 } }
     ]);
 
-    res.json({
-      success: true,
-      data: {
-        trends
-      }
-    });
-
-  } catch (error) {
-    console.error('Get trends error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching trends'
-    });
+    return { trends };
   }
-});
 
-// @route   GET /api/analytics/budgets
-// @desc    Get budget performance
-// @access  Private
-router.get('/budgets', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    // Get all budgets
+  async getBudgetsPerformance(userId) {
     const budgets = await Budget.find({ user: userId });
 
-    // Calculate performance for each budget
     const budgetPerformance = await Promise.all(
       budgets.map(async (budget) => {
         const spent = await Transaction.aggregate([
           {
             $match: {
-              user: userId,
+              user: new mongoose.Types.ObjectId(userId),
               type: 'expense',
-              category: budget.category,
               date: {
                 $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
                 $lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+              }
+            }
+          },
+          {
+            $match: {
+              $expr: {
+                $eq: [ { $toLower: "$category" }, budget.category.trim().toLowerCase() ]
               }
             }
           },
@@ -230,7 +161,7 @@ router.get('/budgets', authMiddleware, async (req, res) => {
         ]);
 
         const spentAmount = spent.length > 0 ? spent[0].total : 0;
-        const percentage = (spentAmount / budget.amount) * 100;
+        const percentage = budget.amount > 0 ? (spentAmount / budget.amount) * 100 : 0;
         const remaining = budget.amount - spentAmount;
 
         return {
@@ -243,20 +174,8 @@ router.get('/budgets', authMiddleware, async (req, res) => {
       })
     );
 
-    res.json({
-      success: true,
-      data: {
-        budgets: budgetPerformance
-      }
-    });
-
-  } catch (error) {
-    console.error('Get budget performance error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching budget performance'
-    });
+    return { budgets: budgetPerformance };
   }
-});
+}
 
-module.exports = router;
+module.exports = new AnalyticsService();

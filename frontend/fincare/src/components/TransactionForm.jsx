@@ -44,11 +44,6 @@ const TransactionForm = ({ transaction = null, onCancel = null }) => {
 
     try {
       // Validation
-      if (!formData.description.trim()) {
-        setError('Please enter a description');
-        return;
-      }
-
       if (!formData.category.trim()) {
         setError('Please select or enter a category');
         return;
@@ -64,12 +59,18 @@ const TransactionForm = ({ transaction = null, onCancel = null }) => {
         amount: parseFloat(formData.amount)
       };
 
+      let result;
       if (transaction) {
         // Update existing transaction
-        await updateTransaction(transaction._id, transactionData);
+        result = await updateTransaction(transaction._id, transactionData);
       } else {
         // Add new transaction
-        await addTransaction(transactionData);
+        result = await addTransaction(transactionData);
+      }
+
+      if (result && !result.success) {
+        setError(result.error || 'Failed to save transaction');
+        return;
       }
 
       // Reset form after successful submission
@@ -95,7 +96,7 @@ const TransactionForm = ({ transaction = null, onCancel = null }) => {
 
   // Define categories based on transaction type
   const incomeCategories = ['Salary', 'Freelance', 'Investment', 'Business', 'Other Income'];
-  const expenseCategories = ['Food & Dining', 'Transportation', 'Shopping', 'Entertainment', 'Bills & Utilities', 'Healthcare', 'Education', 'Travel', 'Other Expenses'];
+  const expenseCategories = ['Food & Dining', 'Rent', 'Transportation', 'Shopping', 'Entertainment', 'Bills & Utilities', 'Healthcare', 'Education', 'Travel', 'Other Expenses'];
   
   const currentCategories = formData.type === 'income' ? incomeCategories : expenseCategories;
 
@@ -176,9 +177,8 @@ const TransactionForm = ({ transaction = null, onCancel = null }) => {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Enter transaction description"
+            placeholder="Enter description (optional)"
             maxLength="200"
-            required
           />
         </div>
 

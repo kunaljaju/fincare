@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const FinanceContext = createContext();
@@ -35,7 +35,7 @@ const mockTransactions = [
     _id: '3',
     type: 'expense',
     amount: 300,
-    category: 'Food',
+    category: 'Food & Dining',
     description: 'Grocery shopping',
     date: new Date().toISOString(),
     createdAt: new Date().toISOString()
@@ -63,7 +63,7 @@ const mockTransactions = [
 const mockBudgets = [
   {
     _id: '1',
-    category: 'Food',
+    category: 'Food & Dining',
     amount: 500,
     spent: 300,
     period: 'monthly',
@@ -87,47 +87,52 @@ const mockBudgets = [
   }
 ];
 
+const mockAnalytics = {
+  summary: {
+    totalIncome: 5000,
+    totalExpenses: 1200,
+    balance: 3800,
+    transactionCount: 5
+  },
+  categories: {
+    categories: [
+      { category: 'Food & Dining', total: 300, count: 1 },
+      { category: 'Rent', total: 1200, count: 1 },
+      { category: 'Transportation', total: 150, count: 1 },
+      { category: 'Entertainment', total: 80, count: 1 }
+    ]
+  }
+};
+
 export const FinanceProvider = ({ children }) => {
   const [transactions, setTransactions] = useState(mockTransactions);
   const [budgets, setBudgets] = useState(mockBudgets);
-  const [analytics, setAnalytics] = useState({
-    monthlyTrend: [4000, 4200, 3800, 4500, 5000],
-    categoryBreakdown: {
-      'Food': 300,
-      'Rent': 1200,
-      'Transportation': 150,
-      'Entertainment': 80
-    }
-  });
+  const [analytics, setAnalytics] = useState(mockAnalytics);
   const [loading, setLoading] = useState(false);
 
   // Fetch transactions
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/transactions');
+      const response = await axios.get('/transactions');
       if (response.data.success) {
         setTransactions(response.data.data);
       } else {
-        // Fallback to mock data if API fails
         setTransactions(mockTransactions);
       }
     } catch (error) {
       console.error('Failed to fetch transactions:', error);
-      // Fallback to mock data if API fails
       setTransactions(mockTransactions);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Add transaction
-  const addTransaction = async (transactionData) => {
+  const addTransaction = useCallback(async (transactionData) => {
     try {
-      // Check if we have a token (real user) or not (mock user)
       const token = localStorage.getItem('token');
       if (!token) {
-        // Mock user - add to local state directly
         const newTransaction = {
           _id: Date.now().toString(),
           ...transactionData,
@@ -137,10 +142,8 @@ export const FinanceProvider = ({ children }) => {
         return { success: true };
       }
 
-      // Real user - use API
-      const response = await axios.post('/api/transactions', transactionData);
+      const response = await axios.post('/transactions', transactionData);
       if (response.data.success) {
-        // Add to local state immediately for real-time update
         setTransactions(prev => [response.data.data, ...prev]);
         return { success: true };
       } else {
@@ -151,17 +154,21 @@ export const FinanceProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to add transaction:', error);
+      const errors = error.response?.data?.errors;
+      const errorMsg = errors && Array.isArray(errors) && errors.length > 0
+        ? errors.map(err => err.msg).join('. ')
+        : error.response?.data?.message || 'Failed to add transaction';
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to add transaction'
+        error: errorMsg
       };
     }
-  };
+  }, []);
 
   // Update transaction
-  const updateTransaction = async (id, transactionData) => {
+  const updateTransaction = useCallback(async (id, transactionData) => {
     try {
-      const response = await axios.put(`/api/transactions/${id}`, transactionData);
+      const response = await axios.put(`/transactions/${id}`, transactionData);
       if (response.data.success) {
         setTransactions(prev => 
           prev.map(transaction => 
@@ -177,17 +184,21 @@ export const FinanceProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to update transaction:', error);
+      const errors = error.response?.data?.errors;
+      const errorMsg = errors && Array.isArray(errors) && errors.length > 0
+        ? errors.map(err => err.msg).join('. ')
+        : error.response?.data?.message || 'Failed to update transaction';
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to update transaction' 
+        error: errorMsg
       };
     }
-  };
+  }, []);
 
   // Delete transaction
-  const deleteTransaction = async (id) => {
+  const deleteTransaction = useCallback(async (id) => {
     try {
-      const response = await axios.delete(`/api/transactions/${id}`);
+      const response = await axios.delete(`/transactions/${id}`);
       if (response.data.success) {
         setTransactions(prev => prev.filter(transaction => transaction._id !== id));
         return { success: true };
@@ -204,32 +215,30 @@ export const FinanceProvider = ({ children }) => {
         error: error.response?.data?.message || 'Failed to delete transaction' 
       };
     }
-  };
+  }, []);
 
   // Fetch budgets
-  const fetchBudgets = async () => {
+  const fetchBudgets = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/budgets');
+      const response = await axios.get('/budgets');
       if (response.data.success) {
         setBudgets(response.data.data);
       } else {
-        // Fallback to mock data if API fails
         setBudgets(mockBudgets);
       }
     } catch (error) {
       console.error('Failed to fetch budgets:', error);
-      // Fallback to mock data if API fails
       setBudgets(mockBudgets);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Add budget
-  const addBudget = async (budgetData) => {
+  const addBudget = useCallback(async (budgetData) => {
     try {
-      const response = await axios.post('/api/budgets', budgetData);
+      const response = await axios.post('/budgets', budgetData);
       if (response.data.success) {
         setBudgets(prev => [response.data.data, ...prev]);
         return { success: true };
@@ -241,17 +250,21 @@ export const FinanceProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to add budget:', error);
+      const errors = error.response?.data?.errors;
+      const errorMsg = errors && Array.isArray(errors) && errors.length > 0
+        ? errors.map(err => err.msg).join('. ')
+        : error.response?.data?.message || 'Failed to add budget';
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to add budget' 
+        error: errorMsg
       };
     }
-  };
+  }, []);
 
   // Update budget
-  const updateBudget = async (id, budgetData) => {
+  const updateBudget = useCallback(async (id, budgetData) => {
     try {
-      const response = await axios.put(`/api/budgets/${id}`, budgetData);
+      const response = await axios.put(`/budgets/${id}`, budgetData);
       if (response.data.success) {
         setBudgets(prev => 
           prev.map(budget => 
@@ -267,17 +280,21 @@ export const FinanceProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to update budget:', error);
+      const errors = error.response?.data?.errors;
+      const errorMsg = errors && Array.isArray(errors) && errors.length > 0
+        ? errors.map(err => err.msg).join('. ')
+        : error.response?.data?.message || 'Failed to update budget';
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to update budget' 
+        error: errorMsg
       };
     }
-  };
+  }, []);
 
   // Delete budget
-  const deleteBudget = async (id) => {
+  const deleteBudget = useCallback(async (id) => {
     try {
-      const response = await axios.delete(`/api/budgets/${id}`);
+      const response = await axios.delete(`/budgets/${id}`);
       if (response.data.success) {
         setBudgets(prev => prev.filter(budget => budget._id !== id));
         return { success: true };
@@ -294,15 +311,15 @@ export const FinanceProvider = ({ children }) => {
         error: error.response?.data?.message || 'Failed to delete budget' 
       };
     }
-  };
+  }, []);
 
   // Fetch analytics
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const [summaryResponse, categoriesResponse] = await Promise.all([
-        axios.get('/api/analytics/summary'),
-        axios.get('/api/analytics/categories')
+        axios.get('/analytics/summary'),
+        axios.get('/analytics/categories')
       ]);
       
       if (summaryResponse.data.success && categoriesResponse.data.success) {
@@ -311,50 +328,18 @@ export const FinanceProvider = ({ children }) => {
           categories: categoriesResponse.data.data
         });
       } else {
-        // Fallback to mock data if API fails
-        setAnalytics({
-          summary: {
-            totalIncome: 5000,
-            totalExpenses: 1200,
-            balance: 3800,
-            transactionCount: 5
-          },
-          categories: {
-            categories: [
-              { category: 'Food', total: 300, count: 1 },
-              { category: 'Rent', total: 1200, count: 1 },
-              { category: 'Transportation', total: 150, count: 1 },
-              { category: 'Entertainment', total: 80, count: 1 }
-            ]
-          }
-        });
+        setAnalytics(mockAnalytics);
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
-      // Fallback to mock data if API fails
-      setAnalytics({
-        summary: {
-          totalIncome: 5000,
-          totalExpenses: 1200,
-          balance: 3800,
-          transactionCount: 5
-        },
-        categories: {
-          categories: [
-            { category: 'Food', total: 300, count: 1 },
-            { category: 'Rent', total: 1200, count: 1 },
-            { category: 'Transportation', total: 150, count: 1 },
-            { category: 'Entertainment', total: 80, count: 1 }
-          ]
-        }
-      });
+      setAnalytics(mockAnalytics);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Calculate summary data
-  const getSummaryData = () => {
+  const getSummaryData = useCallback(() => {
     const totalIncome = transactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -371,10 +356,10 @@ export const FinanceProvider = ({ children }) => {
       balance,
       transactionCount: transactions.length
     };
-  };
+  }, [transactions]);
 
   // Get transactions by category
-  const getTransactionsByCategory = () => {
+  const getTransactionsByCategory = useCallback(() => {
     const categoryTotals = {};
     transactions.forEach(transaction => {
       if (transaction.type === 'expense') {
@@ -383,40 +368,22 @@ export const FinanceProvider = ({ children }) => {
       }
     });
     return categoryTotals;
-  };
+  }, [transactions]);
 
   // Load initial data
   useEffect(() => {
-    // Check if we're using mock user (no token)
     const token = localStorage.getItem('token');
     if (!token) {
-      // Mock user - set mock data immediately
       setTransactions(mockTransactions);
       setBudgets(mockBudgets);
-      setAnalytics({
-        summary: {
-          totalIncome: 5000,
-          totalExpenses: 1200,
-          balance: 3800,
-          transactionCount: 5
-        },
-        categories: {
-          categories: [
-            { category: 'Food', total: 300, count: 1 },
-            { category: 'Rent', total: 1200, count: 1 },
-            { category: 'Transportation', total: 150, count: 1 },
-            { category: 'Entertainment', total: 80, count: 1 }
-          ]
-        }
-      });
+      setAnalytics(mockAnalytics);
       setLoading(false);
     } else {
-      // Real user - fetch from API
       fetchTransactions();
       fetchBudgets();
       fetchAnalytics();
     }
-  }, []);
+  }, [fetchTransactions, fetchBudgets, fetchAnalytics]);
 
 
   const value = {

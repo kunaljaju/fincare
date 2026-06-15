@@ -1,4 +1,4 @@
-# FinCare Deployment Guide
+# Fincare Deployment Guide
 
 ## Prerequisites
 - Node.js (v16 or higher)
@@ -38,7 +38,7 @@ Create a `.env` file in the `frontend/fincare` directory:
 VITE_API_URL=http://localhost:5000/api
 
 # App Configuration
-VITE_APP_NAME=FinCare
+VITE_APP_NAME=Fincare
 VITE_APP_VERSION=1.0.0
 ```
 
@@ -59,17 +59,67 @@ npm install
 npm run dev
 ```
 
-## Production Deployment
+## 🚀 Production Deployment Step-by-Step
 
-### Backend Deployment (Heroku/Railway/Vercel)
-1. Set environment variables in your hosting platform
-2. Ensure MongoDB URI is correctly configured
-3. Deploy the backend
+This section guides you through deploying the **Express Backend API to Render** and the **React Frontend App to Vercel**.
 
-### Frontend Deployment (Vercel/Netlify)
-1. Set environment variables in your hosting platform
-2. Update VITE_API_URL to point to your deployed backend
-3. Deploy the frontend
+---
+
+### 📡 Part 1: Deploy the Backend to Render
+
+[Render](https://render.com/) is a cloud hosting platform that can automatically build and run your Node.js Express server.
+
+1. **Create a Render Account:**
+   * Go to [Render](https://render.com/) and sign in (connecting your GitHub account makes imports seamless).
+2. **Create a New Web Service:**
+   * Click **New +** in the Render dashboard and select **Web Service**.
+   * Select your Fincare repository from the list of connected repositories.
+3. **Configure Service Settings:**
+   * **Name:** `fincare-backend` (or a name of your choice).
+   * **Environment:** `Node` (Render auto-detects this).
+   * **Region:** Select a region closest to your target audience or your MongoDB cluster.
+   * **Branch:** `master` (or your active branch name).
+   * **Root Directory:** `backend` (⚠️ **CRITICAL:** You must set this to `backend` because your backend code is inside a subdirectory).
+   * **Build Command:** `npm install`
+   * **Start Command:** `node server.js`
+4. **Configure Environment Variables:**
+   * Click the **Advanced** button or go to the **Environment** tab.
+   * Add the following environment variables:
+     * `MONGODB_URI`: Set to your production MongoDB Atlas connection string.
+     * `JWT_SECRET`: Generate a secure, random secret key.
+     * `JWT_EXPIRE`: `7d`
+     * `NODE_ENV`: `production`
+     * `FRONTEND_URL`: Set to your deployed Vercel frontend URL (e.g., `https://fincare.vercel.app`). *Note: If you do not know this URL yet, you can input your domain placeholder or `*` temporarily, then update it after the frontend deployment is complete.*
+5. **Deploy the Web Service:**
+   * Click **Create Web Service**. Render will trigger the build pipeline.
+   * Once deployment completes successfully, copy the active URL provided at the top of the Render logs page (e.g., `https://fincare-backend.onrender.com`).
+
+---
+
+### 🖥️ Part 2: Deploy the Frontend to Vercel
+
+[Vercel](https://vercel.com/) is a static hosting platform optimized for frontend React and Vite projects.
+
+1. **Create a Vercel Account:**
+   * Sign in to [Vercel](https://vercel.com/) (GitHub login recommended).
+2. **Import the Repository:**
+   * In the Vercel dashboard, click **Add New...** and select **Project**.
+   * Locate and click **Import** next to your Fincare repository.
+3. **Configure Project Settings:**
+   * **Project Name:** `fincare-frontend` (or similar).
+   * **Framework Preset:** `Vite` (Vercel automatically detects this configuration).
+   * **Root Directory:** Click **Edit** and select `frontend/fincare` (⚠️ **CRITICAL:** You must target the `/frontend/fincare` subdirectory, as this is where the React/Vite source code is located).
+4. **Configure Environment Variables:**
+   * Expand the **Environment Variables** section.
+   * Add the following key-value pair:
+     * **Key:** `VITE_API_URL`
+     * **Value:** `https://your-backend-url.onrender.com/api` (Replace this with the actual URL of your deployed Render backend API from Part 1).
+5. **Deploy:**
+   * Click **Deploy**. Vercel will install dependencies, compile the React build files (`npm run build`), and host the static folder.
+   * Once complete, Vercel will provide your final deployed public URL (e.g., `https://fincare.vercel.app`).
+6. **Final Step (Update CORS origin in Render):**
+   * Return to your Render Dashboard for your backend service.
+   * Go to the **Environment** tab and update `FRONTEND_URL` to match the new live Vercel URL. Render will automatically redeploy the backend with the updated CORS rules.
 
 ## Features Included
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Wallet, User, LogOut } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
+import Logo from './Logo';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -15,8 +16,8 @@ const Header = () => {
     <header className="header">
       <div className="header-content">
         <div className="logo">
-          <Wallet size={32} />
-          <h1>FinCare</h1>
+          <Logo size={32} />
+          <h1>Fincare</h1>
         </div>
 
         <div className="user-section">

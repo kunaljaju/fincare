@@ -73,8 +73,19 @@ const budgetSchema = new mongoose.Schema({
     default: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
+
+// Virtual for limit (alias to amount)
+budgetSchema.virtual('limit')
+  .get(function() {
+    return this.amount;
+  })
+  .set(function(value) {
+    this.amount = value;
+  });
 
 // Compound index to ensure one budget per category per period per user
 budgetSchema.index(

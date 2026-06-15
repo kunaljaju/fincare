@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Configure axios defaults
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
   axios.defaults.baseURL = API_BASE_URL;
 
   // Check for existing token on app load
@@ -68,9 +68,13 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
+      const errors = error.response?.data?.errors;
+      const errorMsg = errors && Array.isArray(errors) && errors.length > 0
+        ? errors.map(err => err.msg).join('. ')
+        : error.response?.data?.message || 'Login failed. Please check your credentials.';
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Login failed. Please check your credentials.' 
+        error: errorMsg
       };
     }
   };
@@ -90,9 +94,13 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Registration failed:', error);
+      const errors = error.response?.data?.errors;
+      const errorMsg = errors && Array.isArray(errors) && errors.length > 0
+        ? errors.map(err => err.msg).join('. ')
+        : error.response?.data?.message || 'Registration failed. Please try again.';
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Registration failed. Please try again.' 
+        error: errorMsg
       };
     }
   };

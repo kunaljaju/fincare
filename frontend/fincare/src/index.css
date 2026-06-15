@@ -1,31 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
-  /* FinCare Brand Colors */
-  --fincare-primary: #08152b;
-  --fincare-secondary: #10b981;
-  --fincare-accent: #f59e0b;
-  --fincare-gradient: linear-gradient(135deg, #08152b 0%, #1e3a8a 50%, #10b981 100%);
-  --fincare-glow: 0 0 20px rgba(8, 21, 43, 0.6);
+  /* Premium Neon Green Brand Colors (Aligned with landing page theme) */
+  --fincare-primary: #39ff14;
+  --fincare-secondary: #39ff14;
+  --fincare-accent: #39ff14;
+  --fincare-gradient: linear-gradient(135deg, #39ff14 0%, #39ff14 50%, #adff2f 100%);
+  --fincare-glow: 0 0 25px rgba(57, 255, 20, 0.35);
   
-  /* Base Colors */
-  --primary-color: #1e3a8a;
-  --primary-hover: #1e40af;
-  --secondary-color: #64748b;
-  --success-color: #10b981;
-  --danger-color: #ef4444;
-  --warning-color: #f59e0b;
-  --background: #050a12;
-  --surface: #0f1419;
-  --surface-elevated: #1a1f26;
-  --border: #2a2f36;
-  --text-primary: #ffffff;
-  --text-secondary: #e2e8f0;
-  --text-muted: #94a3b8;
+  /* Obsidian Base Colors with Neon Tinting */
+  --primary-color: #39ff14;
+  --primary-hover: #2be00c;
+  --secondary-color: #8f9e95; /* zinc-500 equivalent but sage-tinted */
+  --success-color: #39ff14;
+  --danger-color: #ff2d55; /* rose-500 equivalent */
+  --warning-color: #ffcc00; /* amber-400 equivalent */
+  --background: #111215; /* Lighter dark charcoal background to reveal glass effect */
+  --surface: #0a0a0c; /* Charcoal surface */
+  --surface-elevated: #000000; /* Pitch black top layer */
+  --border: rgba(255, 255, 255, 0.08); /* Translucent white border */
+  --text-primary: #f8fafc; /* Crisp slate-white */
+  --text-secondary: #94a3b8; /* Slate-gray */
+  --text-muted: #475569; /* Dark slate-gray */
   
   /* Glow Effects */
-  --glow-primary: 0 0 20px rgba(8, 21, 43, 0.5);
-  --glow-success: 0 0 20px rgba(16, 185, 129, 0.4);
-  --glow-danger: 0 0 20px rgba(239, 68, 68, 0.4);
-  --glow-warning: 0 0 20px rgba(245, 158, 11, 0.4);
+  --glow-primary: 0 0 20px rgba(57, 255, 20, 0.25);
+  --glow-success: 0 0 20px rgba(57, 255, 20, 0.25);
+  --glow-danger: 0 0 20px rgba(255, 45, 85, 0.2);
+  --glow-warning: 0 0 20px rgba(255, 204, 0, 0.2);
   
   /* Typography */
   font-synthesis: none;
@@ -51,13 +53,11 @@ html {
 
 body {
   margin: 0;
-  font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', monospace;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
   font-weight: 400;
   color: var(--text-primary);
-  background: 
-    linear-gradient(135deg, #050a12 0%, #0f1419 50%, #08152b 100%),
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M0 0h60v60H0z'/%3E%3Crect x='5' y='45' width='8' height='15'/%3E%3Crect x='15' y='35' width='8' height='25'/%3E%3Crect x='25' y='25' width='8' height='35'/%3E%3Crect x='35' y='15' width='8' height='45'/%3E%3Crect x='45' y='5' width='8' height='55'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background: var(--background);
   background-attachment: fixed;
   font-size: 16px;
   line-height: 1.6;

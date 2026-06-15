@@ -1,6 +1,8 @@
-# 💸 FinCare
+#  Fincare | Personal finance made easy
 
-> A full-stack personal finance management app built with **React + Vite** and **Node.js + Express + MongoDB**. Track income and expenses, manage budgets, visualize spending by category, and monitor your financial health — all behind a secure JWT-authenticated API.
+> A full-stack personal finance management app built with **React + Vite** and **Node.js + Express + MongoDB**. Track income and expenses, manage budgets, visualize spending by category, and monitor your financial health — all behind a secure Web App.
+
+🔗 **Live Website:** [Visit Fincare (Live)](YOUR_LIVE_WEBSITE_URL_HERE)
 
 ---
 
@@ -75,128 +77,87 @@
 ```
 fincare/
 ├── backend/
+│   ├── config/
+│   │   └── database.js          # MongoDB connection setup
+│   ├── features/                # Modular Feature Architecture
+│   │   ├── analytics/
+│   │   │   ├── analytics.controller.js
+│   │   │   ├── analytics.routes.js
+│   │   │   ├── analytics.service.js
+│   │   │   └── analytics.validators.js
+│   │   ├── auth/
+│   │   │   ├── auth.controller.js
+│   │   │   ├── auth.middleware.js
+│   │   │   ├── auth.model.js
+│   │   │   ├── auth.routes.js
+│   │   │   ├── auth.service.js
+│   │   │   └── auth.validators.js
+│   │   ├── budgets/
+│   │   │   ├── budget.controller.js
+│   │   │   ├── budget.model.js
+│   │   │   ├── budget.routes.js
+│   │   │   ├── budget.service.js
+│   │   │   └── budget.validators.js
+│   │   └── transactions/
+│   │       ├── transaction.controller.js
+│   │       ├── transaction.model.js
+│   │       ├── transaction.routes.js
+│   │       ├── transaction.service.js
+│   │       └── transaction.validators.js
 │   ├── middleware/
-│   │   ├── auth.js              # JWT verification — attaches req.user
 │   │   └── errorHandler.js      # Global error handling middleware
-│   ├── models/
-│   │   ├── User.js              # User schema (name, email, password, preferences, isActive)
-│   │   └── Transaction.js       # Transaction schema (type, amount, category, date, notes)
-│   ├── routes/
-│   │   ├── auth.js              # Register, login, logout, verify, profile CRUD
-│   │   ├── transactions.js      # Transaction CRUD + summary + filtering
-│   │   ├── budgets.js           # Budget CRUD
-│   │   └── analytics.js         # Aggregated analytics
 │   ├── utils/
-│   │   └── generateToken.js     # JWT generation helper
+│   │   ├── apiResponse.js       # Standardized response formatters
+│   │   ├── asyncHandler.js      # Async error handler wrapper
+│   │   ├── generateToken.js     # JWT generation helper
+│   │   └── logger.js            # Winston logger config
 │   ├── .env                     # Environment variables (gitignored)
-│   ├── .env.example             # Environment variable template
 │   ├── server.js                # Express app entry point
 │   └── package.json
 │
 └── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   ├── Header.jsx
-    │   │   ├── Sidebar.jsx
-    │   │   ├── Dashboard.jsx
-    │   │   ├── TransactionForm.jsx
-    │   │   ├── TransactionList.jsx
-    │   │   ├── Analytics.jsx
-    │   │   ├── BudgetManager.jsx
-    │   │   ├── BudgetProgress.jsx
-    │   │   ├── CategoryChart.jsx
-    │   │   ├── SummaryCard.jsx
-    │   │   ├── AuthLayout.jsx
-    │   │   ├── ProtectedRoute.jsx
-    │   │   ├── LoadingSpinner.jsx
-    │   │   └── Errorboundary.jsx
-    │   ├── contexts/
-    │   │   ├── AuthContext.jsx    # isAuthenticated, loading, login/logout state
-    │   │   └── FinanceContext.jsx # Transactions, budgets, analytics state
-    │   ├── App.jsx                # Root component — tab routing + auth guard
-    │   └── App.css
-    └── package.json
+    └── fincare/                 # React frontend project
+        ├── src/
+        │   ├── assets/
+        │   │   ├── auth_bg.png  # Auth background asset
+        │   │   └── react.svg
+        │   ├── components/
+        │   │   ├── Analytics.jsx
+        │   │   ├── AuthLayout.jsx
+        │   │   ├── BudgetManager.jsx
+        │   │   ├── BudgetProgress.jsx
+        │   │   ├── CategoryChart.jsx
+        │   │   ├── Dashboard.jsx
+        │   │   ├── Errorboundary.jsx
+        │   │   ├── Header.jsx
+        │   │   ├── IncomeExpenseChart.jsx
+        │   │   ├── LoadingSpinner.jsx
+        │   │   ├── Logo.jsx
+        │   │   ├── ProtectedRoute.jsx
+        │   │   ├── Sidebar.jsx
+        │   │   ├── SummaryCard.jsx
+        │   │   ├── TransactionForm.jsx
+        │   │   ├── TransactionItem.jsx
+        │   │   └── TransactionList.jsx
+        │   ├── contexts/
+        │   │   ├── AuthContext.jsx    # User session, login, and registration state
+        │   │   └── FinanceContext.jsx # Shared transactions, budgets, and stats state
+        │   ├── utils/
+        │   │   └── CurrencyUtils.js   # Indian Rupee currency formatting utilities
+        │   ├── App.css                # Visual theme styling (Liquid Glassmorphism)
+        │   ├── App.jsx                # Layout shell, routing tabs, and authentication checks
+        │   ├── index.css              # Global styles and tailwind-like custom variables
+        │   └── main.jsx               # Application mounting file
+        ├── eslint.config.js
+        ├── index.html
+        ├── package.json
+        └── vite.config.js
 ```
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) v18+
-- [npm](https://www.npmjs.com/) v9+
-- A [MongoDB Atlas](https://www.mongodb.com/atlas) account or a local MongoDB instance
-
----
-
-### Backend Setup
-
-```bash
-# 1. Navigate to the backend directory
-cd backend
-
-# 2. Install dependencies
-npm install
-
-# 3. Set up environment variables
-cp .env.example .env
-# Edit .env with your values — see Environment Variables section below
-
-# 4. Start the development server (hot-reload)
-npm run dev
-```
-
-The API will be running at `http://localhost:5000`.
-
----
-
-### Frontend Setup
-
-```bash
-# 1. Navigate to the frontend directory
-cd frontend
-
-# 2. Install dependencies
-npm install
-
-# 3. Start the Vite dev server
-npm run dev
-```
-
-The app will be available at `http://localhost:5173`.
-
-> ⚠️ Make sure the backend is running before starting the frontend — the app calls `http://localhost:5000/api` by default.
-
----
-
-## 🔑 Environment Variables
-
-Create a `.env` file inside the `/backend` directory. Use `.env.example` as the template:
-
-```env
-# Server
-PORT=5000
-
-# MongoDB — replace with your actual Atlas connection string
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/fincare?retryWrites=true&w=majority
-
-# JWT
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
-JWT_EXPIRES_IN=7d
-
-# CORS — must match the URL where your frontend runs
-FRONTEND_URL=http://localhost:5173
-```
-
-> ⚠️ Never commit your `.env` file. It should already be listed in `.gitignore`.
-
-### MongoDB Atlas Quick Setup
-
-1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. **Database Access** → create a user with Read/Write permissions
-3. **Network Access** → whitelist your IP (or `0.0.0.0/0` for development)
-4. **Connect** → copy the connection string → replace `<username>` and `<password>` in `MONGODB_URI`
+> [!NOTE]
+> For instructions on local development setup, configuration variables, and project scripts, please refer to the **[Contributing Guide](file:///C:/Users/91981/Desktop/fincare/fincare/CONTRIBUTING.md)**.
 
 ---
 
@@ -378,7 +339,7 @@ GET /api/transactions?type=expense&category=Food&startDate=2025-01-01&limit=10
 // Response 200
 {
   "status": "OK",
-  "message": "FinCare API is running",
+  "message": "Fincare API is running",
   "timestamp": "2025-03-12T10:00:00.000Z",
   "dbStatus": "connected"
 }
@@ -439,41 +400,6 @@ App.jsx
 
 ---
 
-## 📜 Scripts
-
-### Backend
-
-```bash
-npm start       # Start server with node (production)
-npm run dev     # Start server with nodemon (development, hot-reload)
-```
-
-### Frontend
-
-```bash
-npm run dev     # Start Vite dev server at http://localhost:5173
-npm run build   # Build for production (outputs to /dist)
-npm run preview # Preview the production build locally
-```
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch: `git checkout -b feature/my-feature`
-3. Commit with conventional commits: `git commit -m 'feat: add my feature'`
-4. Push your branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
-Please make sure your code is clean and linted before submitting a PR.
-
----
-
 ## 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
-
-<p align="center">Built with ❤️ by the FinCare Development Team</p>

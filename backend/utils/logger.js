@@ -1,8 +1,7 @@
 const winston = require('winston');
 
-/**
- * Logger configuration
- */
+// Logger configuration
+
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(

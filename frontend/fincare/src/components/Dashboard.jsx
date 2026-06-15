@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useFinance } from '../contexts/FinanceContext';
-import CategoryChart from './CategoryChart';
 import { DollarSign, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 
 const Dashboard = () => {
@@ -86,16 +85,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts Section */}
-        <div className="charts-section">
-          <div className="chart-container">
-            <div className="chart-header">
-              <h3>Expenses by Category</h3>
-              <p>Breakdown of your spending</p>
-            </div>
-            <CategoryChart />
-          </div>
-        </div>
+
 
         {/* Recent Transactions */}
         <div className="recent-transactions">

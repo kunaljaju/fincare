@@ -4,8 +4,9 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.defaults.color = '#ffffff';
 
-const IncomeExpenseChart = () => {
+const IncomeExpenseChart = ({ height = '350px' }) => {
   const { transactions } = useFinance();
 
   // Generate last 6 months data
@@ -39,8 +40,8 @@ const IncomeExpenseChart = () => {
       {
         label: 'Income',
         data: incomeData,
-        backgroundColor: 'rgba(16, 185, 129, 0.8)',
-        borderColor: '#10b981',
+        backgroundColor: 'rgba(57, 255, 20, 0.8)',
+        borderColor: '#39ff14',
         borderWidth: 2,
         borderRadius: 6,
         borderSkipped: false,
@@ -48,8 +49,8 @@ const IncomeExpenseChart = () => {
       {
         label: 'Expenses',
         data: expenseData,
-        backgroundColor: 'rgba(239, 68, 68, 0.8)',
-        borderColor: '#ef4444',
+        backgroundColor: 'rgba(255, 45, 85, 0.8)',
+        borderColor: '#ff2d55',
         borderWidth: 2,
         borderRadius: 6,
         borderSkipped: false,
@@ -69,7 +70,7 @@ const IncomeExpenseChart = () => {
           pointStyle: 'circle',
           font: {
             size: 13,
-            family: 'Orbitron, monospace',
+            family: 'Inter, sans-serif',
             weight: '500'
           },
           color: '#e2e8f0',
@@ -84,12 +85,12 @@ const IncomeExpenseChart = () => {
         cornerRadius: 8,
         displayColors: true,
         titleFont: {
-          family: 'Orbitron, monospace',
+          family: 'Inter, sans-serif',
           size: 14,
           weight: '600'
         },
         bodyFont: {
-          family: 'Orbitron, monospace',
+          family: 'Inter, sans-serif',
           size: 12
         },
         callbacks: {
@@ -108,7 +109,7 @@ const IncomeExpenseChart = () => {
         ticks: {
           color: '#94a3b8',
           font: {
-            family: 'Orbitron, monospace',
+            family: 'Inter, sans-serif',
             size: 12
           }
         }
@@ -122,7 +123,7 @@ const IncomeExpenseChart = () => {
         ticks: {
           color: '#94a3b8',
           font: {
-            family: 'Orbitron, monospace',
+            family: 'Inter, sans-serif',
             size: 12
           },
           callback: function(value) {
@@ -139,7 +140,7 @@ const IncomeExpenseChart = () => {
 
   return (
     <div className="income-expense-chart">
-      <div className="chart-container">
+      <div className="bar-chart-wrapper" style={{ height, position: 'relative', width: '100%' }}>
         <Bar data={chartData} options={chartOptions} />
       </div>
     </div>

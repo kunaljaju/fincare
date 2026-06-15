@@ -51,6 +51,8 @@ function AppContent() {
     }
   };
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   if (loading) {
     return <LoadingSpinner/>;
   }
@@ -59,19 +61,27 @@ function AppContent() {
   }
 
   return (
-    <FinanceProvider>
-      <div className="app">
-        <Header />
-        <div className="app-body">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          <main className="main-content">
-            <ProtectedRoute>
-              {renderActiveComponent()}
-            </ProtectedRoute>
-          </main>
-        </div>
+    <div className="app">
+      {/* Liquid Glass Background Blobs */}
+      <div className="liquid-blob blob-1"></div>
+      <div className="liquid-blob blob-2"></div>
+      <div className="liquid-blob blob-3"></div>
+
+      <Header />
+      <div className="app-body">
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={setIsSidebarCollapsed}
+        />
+        <main className={`main-content ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+          <ProtectedRoute>
+            {renderActiveComponent()}
+          </ProtectedRoute>
+        </main>
       </div>
-    </FinanceProvider>
+    </div>
   );
 
 }
@@ -81,7 +91,9 @@ function App() {
     
     <ErrorBoundary>
       <AuthProvider>
-       <AppContent />
+        <FinanceProvider>
+          <AppContent />
+        </FinanceProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

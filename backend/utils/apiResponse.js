@@ -1,13 +1,11 @@
-/**
- * Standardized API response utility
- */
+// Standardized API response utility
 
 /**
  * Send success response
- * @param {Object} res - Express response object
- * @param {number} statusCode - HTTP status code
- * @param {string} message - Success message
- * @param {Object} data - Response data
+* @param {Object} res - Express response object
+*@param {number} statusCode - HTTP status code
+*@param {string} message - Success message
+*@param {Object} data - Response data
  */
 const sendSuccess = (res, statusCode = 200, message = 'Success', data = {}) => {
   return res.status(statusCode).json({

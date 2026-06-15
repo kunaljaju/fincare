@@ -13,10 +13,10 @@ const BudgetManager = () => {
     loading
   } = useFinance();
 
-  // Mock categories for budget creation
+  // Standard expense categories matching transactions
   const categories = [
-    'Food', 'Transportation', 'Entertainment', 'Rent', 'Utilities',
-    'Healthcare', 'Shopping', 'Education', 'Travel', 'Other'
+    'Food & Dining', 'Rent', 'Transportation', 'Shopping', 'Entertainment', 'Bills & Utilities',
+    'Healthcare', 'Education', 'Travel', 'Other Expenses'
   ];
 
   const [showForm, setShowForm] = useState(false);
@@ -29,6 +29,7 @@ const BudgetManager = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (editingBudget) {
@@ -70,10 +71,16 @@ const BudgetManager = () => {
         alertThreshold: parseFloat(formData.alertThreshold)
       };
 
+      let result;
       if (editingBudget) {
-        await updateBudget(editingBudget._id, budgetData);
+        result = await updateBudget(editingBudget._id, budgetData);
       } else {
-        await addBudget(budgetData);
+        result = await addBudget(budgetData);
+      }
+
+      if (result && !result.success) {
+        setFormError(result.error || 'Failed to save budget');
+        return;
       }
 
       // Reset form
@@ -100,9 +107,14 @@ const BudgetManager = () => {
   const handleDelete = async (budgetId) => {
     if (window.confirm('Are you sure you want to delete this budget?')) {
       try {
-        await deleteBudget(budgetId);
+        setError('');
+        const res = await deleteBudget(budgetId);
+        if (!res.success) {
+          setError(res.error || 'Failed to delete budget');
+        }
       } catch (err) {
         console.error('Failed to delete budget:', err);
+        setError('Failed to delete budget');
       }
     }
   };
@@ -119,7 +131,7 @@ const BudgetManager = () => {
     setFormError('');
   };
 
-  const availableCategories = categories.expense || [];
+  const availableCategories = categories;
 
   return (
     <div className="budget-manager">
@@ -132,7 +144,7 @@ const BudgetManager = () => {
           onClick={() => setShowForm(!showForm)}
         >
           <Plus size={18} />
-          {showForm ? 'Cancel' : 'Add Budget'}
+          {showForm ? 'Cancel' : 'Create Budget'}
         </button>
       </div>
 
@@ -235,13 +247,6 @@ const BudgetManager = () => {
             <Target size={48} />
             <h3>No budgets created yet</h3>
             <p>Create your first budget to start tracking your spending limits</p>
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowForm(true)}
-            >
-              <Plus size={18} />
-              Create Budget
-            </button>
           </div>
         ) : (
           budgets.map(budget => (

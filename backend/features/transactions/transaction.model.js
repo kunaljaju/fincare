@@ -28,7 +28,7 @@ const transactionSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: [true, 'Description is required'],
+    required: false,
     trim: true,
     maxlength: [200, 'Description cannot be more than 200 characters']
   },
@@ -75,7 +75,7 @@ transactionSchema.virtual('formattedAmount').get(function() {
 
 // Static method to get categories for a user
 transactionSchema.statics.getCategories = async function(userId, type = null) {
-  const matchStage = { user: mongoose.Types.ObjectId(userId) };
+  const matchStage = { user: new mongoose.Types.ObjectId(userId) };
   if (type) matchStage.type = type;
   
   const categories = await this.aggregate([

@@ -4,8 +4,9 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.defaults.color = '#ffffff';
 
-const CategoryChart = () => {
+const CategoryChart = ({ height = '450px' }) => {
   const { getTransactionsByCategory } = useFinance();
 
   const expensesByCategory = getTransactionsByCategory();
@@ -28,16 +29,16 @@ const CategoryChart = () => {
 
   // Modern color palette
   const colors = [
-    '#6366f1', // Indigo
-    '#8b5cf6', // Violet
-    '#ec4899', // Pink
-    '#f59e0b', // Amber
-    '#10b981', // Emerald
-    '#06b6d4', // Cyan
-    '#3b82f6', // Blue
-    '#ef4444', // Red
-    '#84cc16', // Lime
-    '#f97316', // Orange
+    '#39ff14', // Cyber Neon Green
+    '#10b981', // Tech Mint
+    '#06b6d4', // Cyber Cyan
+    '#84cc16', // Electric Lime
+    '#059669', // Dark Emerald
+    '#adff2f', // Green-Yellow
+    '#eab308', // Electric Yellow
+    '#14b8a6', // Deep Teal
+    '#64748b', // Contrast Slate
+    '#8b5cf6', // Contrast Violet/Purple
   ];
 
   // Prepare chart data
@@ -46,7 +47,7 @@ const CategoryChart = () => {
     datasets: [
       {
         data: chartDataArray.map(item => item.amount),
-        backgroundColor: colors.slice(0, chartDataArray.length),
+        backgroundColor: chartDataArray.map((_, index) => colors[index % colors.length]),
         borderColor: '#1e293b',
         borderWidth: 3,
         hoverBorderWidth: 4,
@@ -68,10 +69,10 @@ const CategoryChart = () => {
           pointStyle: 'circle',
           font: {
             size: 13,
-            family: 'Orbitron, monospace',
+            family: 'Inter, sans-serif',
             weight: '500'
           },
-          color: '#e2e8f0',
+          color: '#ffffff',
           generateLabels: function(chart) {
             const data = chart.data;
             if (data.labels.length && data.datasets.length) {
@@ -88,7 +89,9 @@ const CategoryChart = () => {
                   lineWidth: dataset.borderWidth,
                   pointStyle: 'circle',
                   hidden: false,
-                  index: index
+                  index: index,
+                  fontColor: '#ffffff',
+                  color: '#ffffff'
                 };
               });
             }
@@ -105,12 +108,12 @@ const CategoryChart = () => {
         cornerRadius: 8,
         displayColors: true,
         titleFont: {
-          family: 'Orbitron, monospace',
+          family: 'Inter, sans-serif',
           size: 14,
           weight: '600'
         },
         bodyFont: {
-          family: 'Orbitron, monospace',
+          family: 'Inter, sans-serif',
           size: 12
         },
         callbacks: {
@@ -130,8 +133,8 @@ const CategoryChart = () => {
   };
 
   return (
-    <div className="category-chart">
-      <div className="chart-container">
+    <div className="category-chart" style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="pie-chart-wrapper" style={{ height, position: 'relative', margin: '0 auto', width: '100%', maxWidth: '600px' }}>
         <Pie data={chartData} options={chartOptions} />
       </div>
     </div>

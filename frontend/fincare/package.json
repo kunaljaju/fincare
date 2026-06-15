@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "FinCare Frontend - Personal Finance Management",
+  "description": "Fincare Frontend - Personal Finance Management",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -28,14 +28,9 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "vite": "^5.0.8"
   },
-  "keywords": [
-    "finance",
-    "budgeting",
-    "expense-tracker",
-    "react",
-    "vite",
-    "fincare"
-  ],
-  "author": "FinCare Development Team",
+  "author": {
+    "name": "Kunal Jaju",
+    "email": "kjaju1902@gmail.com"
+  },
   "license": "MIT"
 }

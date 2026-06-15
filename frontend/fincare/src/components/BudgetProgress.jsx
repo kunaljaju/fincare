@@ -16,9 +16,9 @@ const BudgetProgress = ({ budget, onEdit, onDelete }) => {
   } = budget;
 
   const getProgressBarColor = () => {
-    if (isOverBudget) return '#ef4444'; // Red
-    if (isNearLimit) return '#f59e0b'; // Orange
-    return '#10b981'; // Green
+    if (isOverBudget) return 'var(--danger-color)'; // Red
+    if (isNearLimit) return 'var(--warning-color)'; // Orange
+    return 'var(--fincare-primary)'; // Neon Green
   };
 
   const getStatusIcon = () => {
@@ -39,18 +39,58 @@ const BudgetProgress = ({ budget, onEdit, onDelete }) => {
 
   return (
     <div className={`budget-progress ${isOverBudget ? 'over-budget' : isNearLimit ? 'near-limit' : 'on-track'}`}>
-      <div className="budget-header">
-        <div className="budget-info">
-          <h3 className="budget-category">{category}</h3>
-          <span className="budget-period">{period}</span>
-        </div>
-        
-        <div className="budget-status">
-          {getStatusIcon()}
-          <span className="status-text">{getStatusText()}</span>
+      <div className="budget-progress-row">
+        {/* Left Section: Category, Period & Status */}
+        <div className="budget-left-section">
+          <div className="budget-info">
+            <h3 className="budget-category">{category}</h3>
+            <span className="budget-period">{period}</span>
+          </div>
+          
+          <div className="budget-status">
+            {getStatusIcon()}
+            <span className="status-text">{getStatusText()}</span>
+          </div>
         </div>
 
-        <div className="budget-actions">
+        {/* Middle Section: Progress Bar */}
+        <div className="budget-middle-section">
+          <div className="progress-bar-container">
+            <div className="progress-bar">
+              <div 
+                className="progress-fill"
+                style={{ 
+                  width: `${Math.min(percentage, 100)}%`,
+                  backgroundColor: getProgressBarColor()
+                }}
+              ></div>
+            </div>
+            <span className="progress-percentage">
+              {percentage.toFixed(1)}% used
+            </span>
+          </div>
+        </div>
+
+        {/* Right Section: Amounts */}
+        <div className="budget-right-section">
+          <div className="amount-item spent">
+            <span className="label">Spent</span>
+            <span className="value">{formatCurrency(spent)}</span>
+          </div>
+          <div className="amount-item limit">
+            <span className="label">Limit</span>
+            <span className="value">{formatCurrency(limit)}</span>
+          </div>
+          <div className="amount-item remaining">
+            <span className="label">Remaining</span>
+            <span className={`value ${remaining < 0 ? 'negative' : 'positive'}`}>
+              {formatCurrency(remaining)}
+            </span>
+          </div>
+        </div>
+
+        {/* Actions Section: Edit / Delete */}
+        <div className="budget-actions-section">
           <button 
             className="action-btn edit"
             onClick={() => onEdit(budget)}
@@ -65,41 +105,6 @@ const BudgetProgress = ({ budget, onEdit, onDelete }) => {
           >
             <Trash2 size={16} />
           </button>
-        </div>
-      </div>
-
-      <div className="budget-amounts">
-        <div className="amount-item">
-          <span className="label">Spent</span>
-          <span className="value">{formatCurrency(spent)}</span>
-        </div>
-        <div className="amount-item">
-          <span className="label">Limit</span>
-          <span className="value">{formatCurrency(limit)}</span>
-        </div>
-        <div className="amount-item">
-          <span className="label">Remaining</span>
-          <span className={`value ${remaining < 0 ? 'negative' : 'positive'}`}>
-            {formatCurrency(remaining)}
-          </span>
-        </div>
-      </div>
-
-      <div className="progress-section">
-        <div className="progress-info">
-          <span className="progress-percentage">
-            {percentage.toFixed(1)}% used
-          </span>
-        </div>
-        
-        <div className="progress-bar">
-          <div 
-            className="progress-fill"
-            style={{ 
-              width: `${Math.min(percentage, 100)}%`,
-              backgroundColor: getProgressBarColor()
-            }}
-          ></div>
         </div>
       </div>
 
