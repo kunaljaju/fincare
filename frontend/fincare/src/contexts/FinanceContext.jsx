@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useAuth } from './AuthContext';
 
 const FinanceContext = createContext();
 
@@ -24,6 +25,7 @@ const defaultAnalytics = {
 };
 
 export const FinanceProvider = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [analytics, setAnalytics] = useState(defaultAnalytics);
@@ -295,10 +297,9 @@ export const FinanceProvider = ({ children }) => {
     return categoryTotals;
   }, [transactions]);
 
-  // Load initial data
+  // Load initial data / reset on auth changes
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!isAuthenticated) {
       setTransactions([]);
       setBudgets([]);
       setAnalytics(defaultAnalytics);
@@ -308,7 +309,7 @@ export const FinanceProvider = ({ children }) => {
       fetchBudgets();
       fetchAnalytics();
     }
-  }, [fetchTransactions, fetchBudgets, fetchAnalytics]);
+  }, [isAuthenticated, fetchTransactions, fetchBudgets, fetchAnalytics]);
 
 
   const value = {
