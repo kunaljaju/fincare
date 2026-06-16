@@ -24,7 +24,11 @@ const transactionValidation = {
       .isISO8601()
       .withMessage('Date must be a valid ISO date')
       .custom((value) => {
-        if (new Date(value) > new Date()) {
+        const inputDate = new Date(value);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(23, 59, 59, 999);
+        if (inputDate > tomorrow) {
           throw new Error('Transaction date cannot be in the future');
         }
         return true;

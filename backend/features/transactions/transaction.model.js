@@ -42,7 +42,10 @@ const transactionSchema = new mongoose.Schema({
     required: [true, 'Date is required'],
     validate: {
       validator: function(value) {
-        return value <= new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(23, 59, 59, 999);
+        return value <= tomorrow;
       },
       message: 'Transaction date cannot be in the future'
     }
