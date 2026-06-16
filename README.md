@@ -2,7 +2,7 @@
 
 > A full-stack personal finance management app built with **React + Vite** and **Node.js + Express + MongoDB**. Track income and expenses, manage budgets, visualize spending by category, and monitor your financial health — all behind a secure Web App.
 
-🔗 **Live Website:** [Visit Fincare (Live)](YOUR_LIVE_WEBSITE_URL_HERE)
+🔗 **Live Website:** [Visit Fincare (Live)](https://fincare-frontend.vercel.app/)
 
 ---
 
