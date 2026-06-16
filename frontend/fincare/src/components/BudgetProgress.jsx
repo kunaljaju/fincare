@@ -3,17 +3,30 @@ import { formatCurrency } from '../utils/CurrencyUtils';
 import { Edit2, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const BudgetProgress = ({ budget, onEdit, onDelete }) => {
+  const limit = budget.limit !== undefined && budget.limit !== null ? budget.limit : budget.amount;
+  const spent = budget.spent || 0;
   const {
     _id,
     category,
-    limit,
-    spent = 0,
-    remaining = limit,
-    percentage = 0,
-    isOverBudget = false,
-    isNearLimit = false,
     period
   } = budget;
+
+  const remaining = budget.remaining !== undefined && budget.remaining !== null 
+    ? budget.remaining 
+    : (limit - spent);
+
+  const percentage = budget.percentage !== undefined && budget.percentage !== null 
+    ? budget.percentage 
+    : (limit > 0 ? (spent / limit) * 100 : 0);
+
+  const isOverBudget = budget.isOverBudget !== undefined && budget.isOverBudget !== null 
+    ? budget.isOverBudget 
+    : (spent > limit);
+
+  const alertThreshold = budget.alertThreshold || 80;
+  const isNearLimit = budget.isNearLimit !== undefined && budget.isNearLimit !== null 
+    ? budget.isNearLimit 
+    : (spent >= limit * (alertThreshold / 100));
 
   const getProgressBarColor = () => {
     if (isOverBudget) return 'var(--danger-color)'; // Red

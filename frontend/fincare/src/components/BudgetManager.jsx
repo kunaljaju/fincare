@@ -10,8 +10,14 @@ const BudgetManager = () => {
     addBudget, 
     updateBudget, 
     deleteBudget,
+    fetchBudgets,
     loading
   } = useFinance();
+
+  // Fetch budgets when component mounts
+  useEffect(() => {
+    fetchBudgets();
+  }, [fetchBudgets]);
 
   // Standard expense categories matching transactions
   const categories = [
@@ -33,9 +39,10 @@ const BudgetManager = () => {
 
   useEffect(() => {
     if (editingBudget) {
+      const budgetLimit = editingBudget.limit !== undefined && editingBudget.limit !== null ? editingBudget.limit : editingBudget.amount;
       setFormData({
         category: editingBudget.category,
-        limit: editingBudget.limit.toString(),
+        limit: budgetLimit !== undefined && budgetLimit !== null ? budgetLimit.toString() : '0',
         period: editingBudget.period,
         alertThreshold: editingBudget.alertThreshold
       });

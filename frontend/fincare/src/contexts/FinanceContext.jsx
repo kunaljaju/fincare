@@ -11,103 +11,22 @@ export const useFinance = () => {
   return context;
 };
 
-// Mock data for demo purposes
-const mockTransactions = [
-  {
-    _id: '1',
-    type: 'income',
-    amount: 5000,
-    category: 'Salary',
-    description: 'Monthly salary',
-    date: new Date().toISOString(),
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '2',
-    type: 'expense',
-    amount: 1200,
-    category: 'Rent',
-    description: 'Monthly rent payment',
-    date: new Date().toISOString(),
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '3',
-    type: 'expense',
-    amount: 300,
-    category: 'Food & Dining',
-    description: 'Grocery shopping',
-    date: new Date().toISOString(),
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '4',
-    type: 'expense',
-    amount: 150,
-    category: 'Transportation',
-    description: 'Gas and public transport',
-    date: new Date().toISOString(),
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '5',
-    type: 'income',
-    amount: 500,
-    category: 'Freelance',
-    description: 'Freelance project payment',
-    date: new Date().toISOString(),
-    createdAt: new Date().toISOString()
-  }
-];
-
-const mockBudgets = [
-  {
-    _id: '1',
-    category: 'Food & Dining',
-    amount: 500,
-    spent: 300,
-    period: 'monthly',
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '2',
-    category: 'Transportation',
-    amount: 200,
-    spent: 150,
-    period: 'monthly',
-    createdAt: new Date().toISOString()
-  },
-  {
-    _id: '3',
-    category: 'Entertainment',
-    amount: 300,
-    spent: 80,
-    period: 'monthly',
-    createdAt: new Date().toISOString()
-  }
-];
-
-const mockAnalytics = {
+const defaultAnalytics = {
   summary: {
-    totalIncome: 5000,
-    totalExpenses: 1200,
-    balance: 3800,
-    transactionCount: 5
+    totalIncome: 0,
+    totalExpenses: 0,
+    balance: 0,
+    transactionCount: 0
   },
   categories: {
-    categories: [
-      { category: 'Food & Dining', total: 300, count: 1 },
-      { category: 'Rent', total: 1200, count: 1 },
-      { category: 'Transportation', total: 150, count: 1 },
-      { category: 'Entertainment', total: 80, count: 1 }
-    ]
+    categories: []
   }
 };
 
 export const FinanceProvider = ({ children }) => {
-  const [transactions, setTransactions] = useState(mockTransactions);
-  const [budgets, setBudgets] = useState(mockBudgets);
-  const [analytics, setAnalytics] = useState(mockAnalytics);
+  const [transactions, setTransactions] = useState([]);
+  const [budgets, setBudgets] = useState([]);
+  const [analytics, setAnalytics] = useState(defaultAnalytics);
   const [loading, setLoading] = useState(false);
 
   // Fetch transactions
@@ -118,11 +37,54 @@ export const FinanceProvider = ({ children }) => {
       if (response.data.success) {
         setTransactions(response.data.data);
       } else {
-        setTransactions(mockTransactions);
+        setTransactions([]);
       }
     } catch (error) {
       console.error('Failed to fetch transactions:', error);
-      setTransactions(mockTransactions);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch budgets
+  const fetchBudgets = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/budgets');
+      if (response.data.success) {
+        setBudgets(response.data.data);
+      } else {
+        setBudgets([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch budgets:', error);
+      setBudgets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch analytics
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [summaryResponse, categoriesResponse] = await Promise.all([
+        axios.get('/analytics/summary'),
+        axios.get('/analytics/categories')
+      ]);
+      
+      if (summaryResponse.data.success && categoriesResponse.data.success) {
+        setAnalytics({
+          summary: summaryResponse.data.data,
+          categories: categoriesResponse.data.data
+        });
+      } else {
+        setAnalytics(defaultAnalytics);
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+      setAnalytics(defaultAnalytics);
     } finally {
       setLoading(false);
     }
@@ -145,6 +107,8 @@ export const FinanceProvider = ({ children }) => {
       const response = await axios.post('/transactions', transactionData);
       if (response.data.success) {
         setTransactions(prev => [response.data.data, ...prev]);
+        fetchBudgets();
+        fetchAnalytics();
         return { success: true };
       } else {
         return {
@@ -163,7 +127,7 @@ export const FinanceProvider = ({ children }) => {
         error: errorMsg
       };
     }
-  }, []);
+  }, [fetchBudgets, fetchAnalytics]);
 
   // Update transaction
   const updateTransaction = useCallback(async (id, transactionData) => {
@@ -175,6 +139,8 @@ export const FinanceProvider = ({ children }) => {
             transaction._id === id ? response.data.data : transaction
           )
         );
+        fetchBudgets();
+        fetchAnalytics();
         return { success: true };
       } else {
         return {
@@ -193,7 +159,7 @@ export const FinanceProvider = ({ children }) => {
         error: errorMsg
       };
     }
-  }, []);
+  }, [fetchBudgets, fetchAnalytics]);
 
   // Delete transaction
   const deleteTransaction = useCallback(async (id) => {
@@ -201,6 +167,8 @@ export const FinanceProvider = ({ children }) => {
       const response = await axios.delete(`/transactions/${id}`);
       if (response.data.success) {
         setTransactions(prev => prev.filter(transaction => transaction._id !== id));
+        fetchBudgets();
+        fetchAnalytics();
         return { success: true };
       } else {
         return {
@@ -215,25 +183,7 @@ export const FinanceProvider = ({ children }) => {
         error: error.response?.data?.message || 'Failed to delete transaction' 
       };
     }
-  }, []);
-
-  // Fetch budgets
-  const fetchBudgets = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/budgets');
-      if (response.data.success) {
-        setBudgets(response.data.data);
-      } else {
-        setBudgets(mockBudgets);
-      }
-    } catch (error) {
-      console.error('Failed to fetch budgets:', error);
-      setBudgets(mockBudgets);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  }, [fetchBudgets, fetchAnalytics]);
 
   // Add budget
   const addBudget = useCallback(async (budgetData) => {
@@ -313,31 +263,6 @@ export const FinanceProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch analytics
-  const fetchAnalytics = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [summaryResponse, categoriesResponse] = await Promise.all([
-        axios.get('/analytics/summary'),
-        axios.get('/analytics/categories')
-      ]);
-      
-      if (summaryResponse.data.success && categoriesResponse.data.success) {
-        setAnalytics({
-          summary: summaryResponse.data.data,
-          categories: categoriesResponse.data.data
-        });
-      } else {
-        setAnalytics(mockAnalytics);
-      }
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-      setAnalytics(mockAnalytics);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Calculate summary data
   const getSummaryData = useCallback(() => {
     const totalIncome = transactions
@@ -374,9 +299,9 @@ export const FinanceProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
-      setTransactions(mockTransactions);
-      setBudgets(mockBudgets);
-      setAnalytics(mockAnalytics);
+      setTransactions([]);
+      setBudgets([]);
+      setAnalytics(defaultAnalytics);
       setLoading(false);
     } else {
       fetchTransactions();
