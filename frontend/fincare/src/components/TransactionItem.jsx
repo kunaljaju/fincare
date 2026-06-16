@@ -35,7 +35,7 @@ const TransactionItem = ({ transaction, onDelete }) => {
   }
 
   return (
-    <div className={`transaction-item ${transaction.type}`}>
+    <div className={`transaction-item ${transaction.type} ${showActions ? 'menu-open' : ''}`}>
       <div className="transaction-main">
         <div className="transaction-details">
           <h4 className="transaction-description">{transaction.description}</h4>
