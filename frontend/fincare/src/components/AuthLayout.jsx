@@ -263,7 +263,7 @@ const AuthLayout = () => {
               <span style={{ fontSize: '0.8em', opacity: 0.9 }}>Smart Tracking, Clearer Insights.</span>
             </h1>
             <p className="hero-subtitle-desc">
-              Track expenses, set flexible budgets, and gain deep insights with Fincare's modern dark mode interface.
+              Track expenses, set flexible budgets, and gain deep insights with Fincare.
             </p>
             <button className="btn-pill-glow" onClick={() => setView('signup')}>
               Sign Up for Free
