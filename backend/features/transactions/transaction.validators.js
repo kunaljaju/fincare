@@ -11,6 +11,7 @@ const transactionValidation = {
       .withMessage('Amount must be between 0.01 and 10,000,000'),
     
     body('description')
+      .optional({ checkFalsy: true })
       .trim()
       .isLength({ min: 1, max: 200 })
       .withMessage('Description must be between 1 and 200 characters'),
